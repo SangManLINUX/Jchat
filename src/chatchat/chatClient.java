@@ -17,7 +17,7 @@ public class chatClient extends JFrame {
 	
 	chatClient() {
 		JFrame frame = new JFrame("클라이언트");
-		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		JPanel mainPanel = new JPanel();
 		incoming = new JTextArea(15, 50);
 		incoming.setLineWrap(true);
@@ -27,6 +27,7 @@ public class chatClient extends JFrame {
 		qScroller.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
 		qScroller.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
 		outgoing = new JTextField(20);
+		outgoing.addKeyListener(new MyKeyListener());
 		JButton sendButton = new JButton("전송");
 		sendButton.addActionListener(new SendButtonListener());
 		mainPanel.add(qScroller);
@@ -62,6 +63,20 @@ public class chatClient extends JFrame {
 			outgoing.requestFocus();
 		}
 	}
+	
+	public class MyKeyListener extends KeyAdapter {
+		public void keyPressed(KeyEvent e) {
+			int keyCode = e.getKeyCode();
+			if (keyCode == 10) {
+				try {
+					writer.println(outgoing.getText());
+					writer.flush();	}
+				catch(Exception ex) {ex.printStackTrace();}
+				outgoing.setText("");
+				outgoing.requestFocus();
+				}
+			}
+		}
 	
 	public class IncomingReader implements Runnable {
 		public void run() {
