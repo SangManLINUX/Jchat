@@ -60,7 +60,7 @@ public class chatServer {
 				try {
 					sock.close();
 				} catch (Exception e1) {
-					System.out.println("server out");
+					System.out.println("server down");
 				}
 				}
 		}

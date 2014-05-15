@@ -55,19 +55,21 @@ public class chatClient extends JFrame {
 	
 	public class SendButtonListener implements ActionListener {
 		public void actionPerformed(ActionEvent e) {
-			try {
-				writer.println(outgoing.getText());
-				writer.flush();
-			} catch(Exception ex) {ex.printStackTrace();}
-			outgoing.setText("");
-			outgoing.requestFocus();
+			if ( outgoing.getText().length() != 0) {
+				try {
+					writer.println(outgoing.getText());
+					writer.flush();
+					} catch(Exception ex) {ex.printStackTrace();}
+				outgoing.setText("");
+				outgoing.requestFocus();
+			}
 		}
 	}
 	
 	public class MyKeyListener extends KeyAdapter {
 		public void keyPressed(KeyEvent e) {
 			int keyCode = e.getKeyCode();
-			if (keyCode == 10) {
+			if (keyCode == 10 && outgoing.getText().length() != 0) {
 				try {
 					writer.println(outgoing.getText());
 					writer.flush();	}
