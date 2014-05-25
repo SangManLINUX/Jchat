@@ -14,7 +14,12 @@ public class chatServer {
 			ServerSocket serverSock = new ServerSocket(5000);
 			while(true) {
 				Socket clientSocket = serverSock.accept();
-				PrintWriter writer = new PrintWriter(clientSocket.getOutputStream());
+				
+//				PrintWriter writer = new PrintWriter(clientSocket.getOutputStream());
+				BufferedWriter writer;
+				OutputStreamWriter streamWriter = new OutputStreamWriter(clientSocket.getOutputStream());
+				writer = new BufferedWriter(streamWriter);
+				
 				clientOutputStreams.add(writer);
 				
 				Thread t = new Thread(new ClientHandler(clientSocket));
@@ -28,8 +33,13 @@ public class chatServer {
 		Iterator it = clientOutputStreams.iterator();
 		while(it.hasNext()) {
 			try {
-				PrintWriter writer = (PrintWriter)it.next();
-				writer.println(message);
+				BufferedWriter writer = (BufferedWriter)it.next();
+//				OutputStreamWriter streamWriter = new OutputStreamWriter((it.next());
+
+//				PrintWriter writer = (PrintWriter)it.next();
+//				writer.println(message);
+
+				writer.write(message+"\n");
 				writer.flush();
 			} catch(Exception e) {e.printStackTrace();}
 		}
@@ -51,6 +61,7 @@ public class chatServer {
 			String message;
 			try {
 				while((message = reader.readLine()) != null) {
+//				while((message = reader.readLine()).length() != 0) {
 					System.out.println("¹ÞÀ½ " + message);
 					tellEveryone(message);
 				}

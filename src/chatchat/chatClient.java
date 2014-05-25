@@ -12,7 +12,8 @@ public class chatClient extends JFrame {
 	JTextArea incoming;
 	JTextField outgoing;
 	BufferedReader reader;
-	PrintWriter writer;
+//	PrintWriter writer;
+	BufferedWriter writer;
 	Socket sock;
 	
 	chatClient() {
@@ -47,8 +48,10 @@ public class chatClient extends JFrame {
 		try {
 			sock = new Socket("localhost", 5000);
 			InputStreamReader streamReader = new InputStreamReader(sock.getInputStream());
+			OutputStreamWriter streamWriter = new OutputStreamWriter(sock.getOutputStream());
 			reader = new BufferedReader(streamReader);
-			writer = new PrintWriter(sock.getOutputStream());
+			writer = new BufferedWriter(streamWriter);
+//			writer = new PrintWriter(sock.getOutputStream());
 			System.out.println("Established...");
 		} catch(IOException e) {e.printStackTrace();}
 	}
@@ -57,7 +60,8 @@ public class chatClient extends JFrame {
 		public void actionPerformed(ActionEvent e) {
 			if ( outgoing.getText().length() != 0) {
 				try {
-					writer.println(outgoing.getText());
+					writer.write(outgoing.getText()+"\n");
+//					writer.println(outgoing.getText());
 					writer.flush();
 					} catch(Exception ex) {ex.printStackTrace();}
 				outgoing.setText("");
@@ -71,7 +75,8 @@ public class chatClient extends JFrame {
 			int keyCode = e.getKeyCode();
 			if (keyCode == 10 && outgoing.getText().length() != 0) {
 				try {
-					writer.println(outgoing.getText());
+					writer.write(outgoing.getText()+"\n");
+//					writer.println(outgoing.getText());
 					writer.flush();	}
 				catch(Exception ex) {ex.printStackTrace();}
 				outgoing.setText("");
@@ -93,7 +98,7 @@ public class chatClient extends JFrame {
 	}
 	
 	public static void main(String[] args) {
-		chatClient A = new chatClient();
+		new chatClient();
 	}
 }
 	
