@@ -15,6 +15,7 @@ public class chatClient extends JFrame {
 //	PrintWriter writer;
 	BufferedWriter writer;
 	Socket sock;
+	OutputStreamWriter streamWriter;
 	
 	chatClient() {
 		JFrame frame = new JFrame("클라이언트");
@@ -48,7 +49,7 @@ public class chatClient extends JFrame {
 		try {
 			sock = new Socket("localhost", 5000);
 			InputStreamReader streamReader = new InputStreamReader(sock.getInputStream());
-			OutputStreamWriter streamWriter = new OutputStreamWriter(sock.getOutputStream());
+			streamWriter = new OutputStreamWriter(sock.getOutputStream()); // OutputStreamWriter도 밖에서 미리 선언
 			reader = new BufferedReader(streamReader);
 			writer = new BufferedWriter(streamWriter);
 //			writer = new PrintWriter(sock.getOutputStream());

@@ -15,10 +15,9 @@ public class chatServer {
 			while(true) {
 				Socket clientSocket = serverSock.accept();
 				
-//				PrintWriter writer = new PrintWriter(clientSocket.getOutputStream());
-				BufferedWriter writer;
-				OutputStreamWriter streamWriter = new OutputStreamWriter(clientSocket.getOutputStream());
-				writer = new BufferedWriter(streamWriter);
+				PrintWriter writer = new PrintWriter(clientSocket.getOutputStream());				
+//				BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(clientSocket.getOutputStream()));
+				
 				
 				clientOutputStreams.add(writer);
 				
@@ -32,15 +31,13 @@ public class chatServer {
 	public void tellEveryone(String message) {
 		Iterator it = clientOutputStreams.iterator();
 		while(it.hasNext()) {
-			try {
-				BufferedWriter writer = (BufferedWriter)it.next();
-//				OutputStreamWriter streamWriter = new OutputStreamWriter((it.next());
-
-//				PrintWriter writer = (PrintWriter)it.next();
-//				writer.println(message);
-
+			try {	
+				PrintWriter writer = (PrintWriter)it.next();
+				//BufferedWriter writer = (BufferedWriter)it.next();
+				
 				writer.write(message+"\n");
 				writer.flush();
+				
 			} catch(Exception e) {e.printStackTrace();}
 		}
 	}
@@ -61,7 +58,6 @@ public class chatServer {
 			String message;
 			try {
 				while((message = reader.readLine()) != null) {
-//				while((message = reader.readLine()).length() != 0) {
 					System.out.println("¹ÞÀ½ " + message);
 					tellEveryone(message);
 				}
@@ -70,6 +66,7 @@ public class chatServer {
 				// socket close solution
 				try {
 					sock.close();
+					System.out.println("Client down");
 				} catch (Exception e1) {
 					System.out.println("server down");
 				}
