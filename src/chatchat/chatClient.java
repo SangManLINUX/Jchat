@@ -2,6 +2,7 @@ package chatchat;
 
 import java.io.*;
 import java.net.*;
+import java.util.ArrayList;
 
 import javax.swing.*;
 
@@ -11,9 +12,21 @@ import java.awt.event.*;
 public class chatClient extends JFrame {
 	JTextArea incoming;
 	JTextField outgoing;
+	
+	ArrayList<String> ar = new ArrayList<String>();
+	
+	String myNick = "WhoMe"; // 이상함.
+	JList lista = new JList(ar.toArray()); // 이상함.
+	
+	String[] user = { "A", "B", "C" };
+	JList listb =  new JList(user);
+	
+	InputStreamReader streamReader;
+	OutputStreamWriter streamWriter;
+
 	BufferedReader reader;
-//	PrintWriter writer;
 	BufferedWriter writer;
+
 	Socket sock;
 	OutputStreamWriter streamWriter;
 	
@@ -35,6 +48,10 @@ public class chatClient extends JFrame {
 		mainPanel.add(qScroller);
 		mainPanel.add(outgoing);
 		mainPanel.add(sendButton);
+		
+		// 리스트 고민 지역.
+		mainPanel.add(lista);
+		mainPanel.add(listb);
 		setUpNetworking();
 		
 		Thread readerThread = new Thread(new IncomingReader());
@@ -44,17 +61,31 @@ public class chatClient extends JFrame {
 		frame.setSize(800, 600);
 		frame.setVisible(true);
 	}
+	
+	private void setMyNick() {
+		try {
+			System.out.println("나의 닉을 맞추는 중");
+			writer.write(myNick);
+			writer.flush();
+			} catch(Exception e) {e.printStackTrace(); System.out.println("no1");}		
+	}
 
 	private void setUpNetworking() {
 		try {
 			sock = new Socket("localhost", 5000);
+<<<<<<< HEAD
+			streamReader = new InputStreamReader(sock.getInputStream());
+=======
 			InputStreamReader streamReader = new InputStreamReader(sock.getInputStream());
+>>>>>>> 80141a9e766b10d90e087a97221098676bb00bdd
 			streamWriter = new OutputStreamWriter(sock.getOutputStream()); // OutputStreamWriter도 밖에서 미리 선언
 			reader = new BufferedReader(streamReader);
 			writer = new BufferedWriter(streamWriter);
-//			writer = new PrintWriter(sock.getOutputStream());
+			
+			setMyNick(); //닉관련
+			
 			System.out.println("Established...");
-		} catch(IOException e) {e.printStackTrace();}
+		} catch(IOException e) {e.printStackTrace(); System.out.println("no2");}
 	}
 	
 	public class SendButtonListener implements ActionListener {
@@ -62,9 +93,8 @@ public class chatClient extends JFrame {
 			if ( outgoing.getText().length() != 0) {
 				try {
 					writer.write(outgoing.getText()+"\n");
-//					writer.println(outgoing.getText());
 					writer.flush();
-					} catch(Exception ex) {ex.printStackTrace();}
+					} catch(Exception ex) {ex.printStackTrace(); System.out.println("no3");}
 				outgoing.setText("");
 				outgoing.requestFocus();
 			}
@@ -77,9 +107,8 @@ public class chatClient extends JFrame {
 			if (keyCode == 10 && outgoing.getText().length() != 0) {
 				try {
 					writer.write(outgoing.getText()+"\n");
-//					writer.println(outgoing.getText());
-					writer.flush();	}
-				catch(Exception ex) {ex.printStackTrace();}
+					writer.flush();
+					} catch (Exception ex) {ex.printStackTrace(); System.out.println("no4");}
 				outgoing.setText("");
 				outgoing.requestFocus();
 				}
@@ -88,13 +117,15 @@ public class chatClient extends JFrame {
 	
 	public class IncomingReader implements Runnable {
 		public void run() {
+
 			String message;
+			
 			try {
 				while((message = reader.readLine()) != null) {
 					System.out.println("read " + message);
 					incoming.append(message + "\n");
 				}
-			} catch (Exception e) {e.printStackTrace();}
+			} catch (Exception e) {e.printStackTrace(); System.out.println("no6");}
 		}
 	}
 	
@@ -102,4 +133,3 @@ public class chatClient extends JFrame {
 		new chatClient();
 	}
 }
-	
