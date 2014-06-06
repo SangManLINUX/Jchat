@@ -3,6 +3,7 @@ package chatchat;
 import java.io.*;
 import java.net.*;
 import java.util.ArrayList;
+import java.util.Iterator;
 
 import javax.swing.*;
 
@@ -13,13 +14,22 @@ public class chatClient extends JFrame {
 	JTextArea incoming;
 	JTextField outgoing;
 	
-	ArrayList<String> ar = new ArrayList<String>();
+	ArrayList<String> nickList = new ArrayList<String>();
+//	ArrayList nickList = new ArrayList();
 	
 	String myNick = "WhoMe"; // 이상함.
-	JList lista = new JList(ar.toArray()); // 이상함.
 	
-	String[] user = { "A", "B", "C" };
-	JList listb =  new JList(user);
+//	DefaultListModel info = new DefaultListModel();
+//	JList lista = new JList(info);
+	
+	JList lista = new JList(nickList.toArray()); // 이상함.
+
+	
+//	String[] user = { "A", "B", "C" };
+//	JList listb =  new JList(user);
+	ArrayList<String> testList = new ArrayList<String>();
+	JList listb =  new JList(testList.toArray());
+	
 	
 	InputStreamReader streamReader;
 	OutputStreamWriter streamWriter;
@@ -30,9 +40,17 @@ public class chatClient extends JFrame {
 	Socket sock;
 	
 	chatClient() {
+		testList.add("test1");
+		testList.add("Test2");
+		testList.add("tests");
+		listb =  new JList(testList.toArray()); // 이건 작동되네.
+		
+//		info.addElement("new list entry");
+		
 		JFrame frame = new JFrame("클라이언트");
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		JPanel mainPanel = new JPanel();
+		mainPanel.setLayout(new BorderLayout());
 		incoming = new JTextArea(15, 50);
 		incoming.setLineWrap(true);
 		incoming.setWrapStyleWord(true);
@@ -44,13 +62,16 @@ public class chatClient extends JFrame {
 		outgoing.addKeyListener(new MyKeyListener());
 		JButton sendButton = new JButton("전송");
 		sendButton.addActionListener(new SendButtonListener());
-		mainPanel.add(qScroller);
-		mainPanel.add(outgoing);
-		mainPanel.add(sendButton);
+		mainPanel.add(qScroller, BorderLayout.WEST);
+		mainPanel.add(outgoing, BorderLayout.CENTER);
+		mainPanel.add(sendButton, BorderLayout.EAST);
 		
+//		lista.setVisible(true);
 		// 리스트 고민 지역.
-		mainPanel.add(lista);
-		mainPanel.add(listb);
+		mainPanel.add(lista, BorderLayout.SOUTH);
+		mainPanel.add(listb, BorderLayout.NORTH);
+		
+		
 		setUpNetworking();
 		
 		Thread readerThread = new Thread(new IncomingReader());
@@ -64,7 +85,7 @@ public class chatClient extends JFrame {
 	private void setMyNick() {
 		try {
 			System.out.println("나의 닉을 맞추는 중");
-			writer.write(myNick);
+			writer.write("/nick/" + "\n" + myNick + "\n");
 			writer.flush();
 			} catch(Exception e) {e.printStackTrace(); System.out.println("no1");}		
 	}
@@ -110,6 +131,26 @@ public class chatClient extends JFrame {
 			}
 		}
 	
+	public void refreshNick() { // 문제 많은 함수.
+		nickList.clear();
+		
+		String message;
+		try {
+			while( (message = reader.readLine()) != null) {
+				
+				if(message.equals("/nick/")) // 기묘함.
+				{
+					System.out.println("닉네임 리스트 꼬리 받음");
+					break;
+				}
+				
+				System.out.println("닉네임" + message + "들어옴");
+				nickList.add(message);
+			} 
+		} catch (Exception e) { e.printStackTrace();}
+		 lista = new JList(nickList.toArray()); // 작동을 안함. ArrayList 가공이 필요한듯.
+	}
+	
 	public class IncomingReader implements Runnable {
 		public void run() {
 
@@ -117,6 +158,12 @@ public class chatClient extends JFrame {
 			
 			try {
 				while((message = reader.readLine()) != null) {
+					if(message.equals("/nick/"))
+					{
+						System.out.println("닉네임리스트가 온다");
+						refreshNick();
+						continue;
+					}
 					System.out.println("read " + message);
 					incoming.append(message + "\n");
 				}

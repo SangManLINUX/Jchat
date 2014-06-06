@@ -8,11 +8,18 @@ import javax.swing.*;
 public class chatServer {
 	
 	ArrayList<Object> clientOutputStreams;
-	ArrayList<Object> nickList;
+	ArrayList<String> nickList;
+	
+
 		
 	chatServer() {
+		
 		clientOutputStreams = new ArrayList<Object>();
-		nickList = new ArrayList<Object>();	
+		nickList = new ArrayList<String>();	
+		
+		nickList.add("Test1");
+		nickList.add("Test2");
+
 		
 		try {
 			ServerSocket serverSock = new ServerSocket(5000);
@@ -61,26 +68,8 @@ public class chatServer {
 		}
 	}
 	
-	public void nickRefresh() { // 문제 많은 함수.
-		
-		Iterator<Object> it = nickList.iterator();
-		while(it.hasNext()) {
-			try {
-				String nickbank = (String)it.next();
-			PrintWriter writer = (PrintWriter)it; // problem
-			writer.write(nickbank);
-			writer.flush();
-			} catch(Exception e) {e.printStackTrace(); System.out.println("no2.1");}
-			}
+	// nickRefresh 함수를 public class ClientHandler로 이사.
 
-	}
-
-	
-	public void setNick(String s) {
-		nickList.add(s);
-		
-		nickRefresh();
-	}
 	
 	public class ClientHandler implements Runnable {
 		InputStreamReader isr;
@@ -93,8 +82,12 @@ public class chatServer {
 		public ClientHandler(Socket clientSocket) {
 			try {
 				sock = clientSocket;
-				InputStreamReader isr = new InputStreamReader(sock.getInputStream());
+//				InputStreamReader isr = new InputStreamReader(sock.getInputStream());
+				isr = new InputStreamReader(sock.getInputStream());
 				reader = new BufferedReader(isr);				
+				
+				osr = new OutputStreamWriter(sock.getOutputStream());
+				writer = new BufferedWriter(osr);
 
 			} catch(Exception e) {e.printStackTrace(); System.out.println("no3");}
 		}
@@ -102,18 +95,13 @@ public class chatServer {
 		public void run() {
 			String message;
 			
-			/* 문제 많은 닉
-			do {
-			try {
-			firstNick = reader.readLine(); // 닉 관련
-			System.out.println(firstNick);
-			setNick(firstNick); // 닉 관련
-			} catch (Exception e) {e.printStackTrace(); System.out.println("no3.1");}
-			} while (false);
-			*/
-			
 			try {
 				while((message = reader.readLine()) != null) {
+					if(message.equals("/nick/"))
+					{
+						setNick();
+						continue;
+					}
 					System.out.println("받음 " + message);
 					tellEveryone(message);
 				}
@@ -127,6 +115,63 @@ public class chatServer {
 					}
 				}
 		}
+		
+		public void nickRefresh() { // 문제 많은 함수.
+
+			try {
+				writer.write("/nick/" + "\n");
+				writer.flush();
+				System.out.println("닉네임 리스트 전송 시작");
+			} catch (Exception e) {
+				e.printStackTrace();
+				System.out.println("여기다.");
+				} 
+			
+			Iterator<String> it = nickList.iterator();
+			while(it.hasNext()) {
+				try {
+					String test;
+					/*
+					if(it.hasNext() == false) // 조건이 안걸린다. "\n" 때문일까. 
+					{
+						System.out.println("닉네임 리스트 꼬리 전송");
+						writer.write("/nick/");
+						writer.flush();
+					}
+					*/
+					writer.write(test = it.next() + "\n");
+
+					System.out.println(test + " 을 전송");
+					writer.flush();
+					
+					if(it.hasNext() == false)
+					{
+						System.out.println("닉네임 리스트 꼬리 전송");
+						writer.write("/nick/" + "\n");
+						writer.flush();
+					}
+					
+					} catch(Exception e) {
+						e.printStackTrace(); 
+						//System.out.println("no2.1");
+						System.out.println("저기다.");
+						}
+				}
+			System.out.println("닉네임 리스트 전송 종료");
+		}
+
+		
+		public void setNick() {
+			String s;
+			try {
+				s = reader.readLine();
+				System.out.println("받은 닉네임은: " + s);
+				nickList.add(s);
+			} catch (Exception e) {e.printStackTrace(); }
+			
+			nickRefresh();
+		}
+
 	
 	}
 	
