@@ -20,7 +20,6 @@ public class chatServer {
 			while(true) {
 				Socket clientSocket = serverSock.accept();
 				
-<<<<<<< HEAD
 				OutputStreamWriter osw = new OutputStreamWriter(clientSocket.getOutputStream());
 				BufferedWriter writer = new BufferedWriter(osw);				
 								
@@ -29,13 +28,6 @@ public class chatServer {
 // AllayList에 writer를 넣어놓고 tellEveryOne에서 it로 가져와서 write를 하는걸로 밝혀짐.
 // 그래서 clientOutputStreams. 닫힌 소켓은 어떻게 ArrayList에서 제거하지???
 // SocketException처리로 해결함.
-=======
-				PrintWriter writer = new PrintWriter(clientSocket.getOutputStream());				
-//				BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(clientSocket.getOutputStream()));
-				
-				
-				clientOutputStreams.add(writer);
->>>>>>> 80141a9e766b10d90e087a97221098676bb00bdd
 				
 				Thread t = new Thread(new ClientHandler(clientSocket));
 				t.start();
@@ -54,7 +46,6 @@ public class chatServer {
 		Iterator<Object> it = clientOutputStreams.iterator();
 		
 		while(it.hasNext()) {
-<<<<<<< HEAD
 			try {
 				
 				BufferedWriter writer = (BufferedWriter)it.next();
@@ -67,16 +58,6 @@ public class chatServer {
 				}
 			catch(Exception e) {e.printStackTrace(); System.out.println("no2");}
 			
-=======
-			try {	
-				PrintWriter writer = (PrintWriter)it.next();
-				//BufferedWriter writer = (BufferedWriter)it.next();
-				
-				writer.write(message+"\n");
-				writer.flush();
-				
-			} catch(Exception e) {e.printStackTrace();}
->>>>>>> 80141a9e766b10d90e087a97221098676bb00bdd
 		}
 	}
 	
