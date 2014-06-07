@@ -4,6 +4,7 @@ import java.io.*;
 import java.net.*;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.*;
 
 import javax.swing.*;
 
@@ -49,6 +50,7 @@ public class chatClient extends JFrame {
 		
 		JFrame frame = new JFrame("클라이언트");
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+//		frame.setDefaultCloseOperation(nickList.remove(myNick));
 		JPanel mainPanel = new JPanel();
 		mainPanel.setLayout(new BorderLayout());
 		incoming = new JTextArea(15, 50);
@@ -101,6 +103,15 @@ public class chatClient extends JFrame {
 			setMyNick(); //닉관련
 			
 			System.out.println("Established...");
+			/*
+			while(true)
+			{
+				if( sock.isClosed() )
+				{
+					nickList.remove(myNick);
+				}
+			}
+			*/
 		} catch(IOException e) {e.printStackTrace(); System.out.println("no2");}
 	}
 	
@@ -148,7 +159,11 @@ public class chatClient extends JFrame {
 				nickList.add(message);
 			} 
 		} catch (Exception e) { e.printStackTrace();}
-		 lista = new JList(nickList.toArray()); // 작동을 안함. ArrayList 가공이 필요한듯.
+		 lista.setListData(nickList.toArray());
+		 lista.repaint();
+		 
+		 
+//		 lista = new JList(nickList.toArray()); // 작동을 안함. ArrayList 가공이 필요한듯.
 	}
 	
 	public class IncomingReader implements Runnable {
