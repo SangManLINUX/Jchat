@@ -29,8 +29,11 @@ public class chatServer {
 				
 				OutputStreamWriter osw = new OutputStreamWriter(clientSocket.getOutputStream());
 				BufferedWriter writer = new BufferedWriter(osw);				
-								
-				clientOutputStreams.add(writer); 
+				
+//				nickRefresh("2"); // 다른 클래스의 함수.
+				
+				clientOutputStreams.add(writer);
+				
 // 아무래도 writer를 통째로 집어넣어서 socket close Exception이 뜨는거 같다.
 // AllayList에 writer를 넣어놓고 tellEveryOne에서 it로 가져와서 write를 하는걸로 밝혀짐.
 // 그래서 clientOutputStreams. 닫힌 소켓은 어떻게 ArrayList에서 제거하지???
@@ -95,7 +98,7 @@ public class chatServer {
 		
 		public void run() {
 			String message;
-			
+						
 			try {
 				while((message = reader.readLine()) != null) {
 					if(message.equals("/nick/"))
@@ -121,19 +124,14 @@ public class chatServer {
 		
 		public String nickRefresh(Object o) {
 			BufferedWriter writer = (BufferedWriter)o;
-//			int dead;
-//			Iterator<String> it = nickList.iterator();
 			
 			try {
 				writer.write("/nick/" + "\n");
 				writer.flush();
 				System.out.println("닉네임 리스트 전송 시작");
 			} catch (SocketException sc) {
-//				dead = 3;
 				System.out.println("소켓이 닫힌 오브젝트드아(nickRefresh로부터)");
-//				return dead;
 				return "/dead/";
-//				it.remove(); // 소켓이 닫힌 오브젝트를 제거.
 				
 			}
 			catch (Exception e) {
@@ -166,7 +164,6 @@ public class chatServer {
 				}
 			System.out.println("닉네임 리스트 전송 종료");		
 			
-//			return 0;
 			return "/fine/";
 		}
 		
@@ -186,23 +183,9 @@ public class chatServer {
 						{
 							it.remove();
 							deadCheck = null;
-						}
-						// it.next()로 어느 클라이언트의 스트림을 받아서 nickRefresh함수로 재귀함수처리.
-						/*
-						BufferedWriter writer = (BufferedWriter)it.next();
-						writer.write(message + "\n");
-						writer.flush();
-						*/
-						
+						}			
 
-					} 
-					/*
-					catch(SocketException se) { 
-						System.out.println("소켓이 닫힌 오브젝트드아");
-						it.remove(); // 소켓이 닫힌 오브젝트를 제거.
-						}
-					*/
-					catch(Exception e) {e.printStackTrace(); System.out.println("가나다");}
+					} catch(Exception e) {e.printStackTrace(); System.out.println("가나다");}
 					
 				}
 
@@ -267,6 +250,7 @@ public class chatServer {
 			} catch (Exception e) {e.printStackTrace(); }
 			
 			nickRefresh("1");
+			nickRefresh("2");
 		}
 
 	
