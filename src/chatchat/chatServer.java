@@ -50,7 +50,7 @@ public class chatServer {
 
 	// public void tellEveryone(String message) 을 	public class ClientHandler으로 이동.
 	// 이동 취소. 그러면 모든 클라이언트한테 보낼 소켓에 안닫는다.
-	public void tellEveryone(String message) {
+	public void tellEveryone(String nickBank,String message) {
 
 
 		Iterator<Object> it = clientOutputStreams.iterator();
@@ -59,7 +59,7 @@ public class chatServer {
 			try {
 				
 				BufferedWriter writer = (BufferedWriter)it.next();
-				writer.write(message + "\n");
+				writer.write(nickBank + ": " + message + "\n");
 				writer.flush();
 
 			} catch(SocketException se) { 
@@ -106,8 +106,16 @@ public class chatServer {
 						setNick();
 						continue;
 					}
+					if(message.equals("/disconnect/"))
+					{
+						sock.close();
+						System.out.println("Client down");
+						nickList.remove(nickBank);
+						nickRefresh("2");
+						continue;
+					}
 					System.out.println("받음 " + message);
-					tellEveryone(message);
+					tellEveryone(nickBank, message);
 				}
 			} catch (Exception e) {
 				System.out.println("no4(normal)");
@@ -120,6 +128,37 @@ public class chatServer {
 					System.out.println("Server down");
 					}
 				}
+		}
+		
+		public void nickCheck() {
+			Iterator<String> it = nickList.iterator();
+			while(it.hasNext()) {
+				if(it.next().compareTo(nickBank) == 0) { // 작동 확인 됨.
+					System.out.println("닉네임이 같은게 있다.");
+					try {
+						writer.write("/denied/" + "\n");
+						writer.flush();
+						sock.close();
+						
+					} catch(Exception e) {e.printStackTrace();}
+				}
+			}
+
+			/*
+			int count = 1;
+			String nickName = nickBank;
+			Iterator<String> it = nickList.iterator();
+			while(it.hasNext()) {
+				if(it.next().compareTo(nickBank) == 0) { // 작동 확인 됨.
+					System.out.println("닉네임이 같은게 있다.");
+					nickBank = nickName + "(" + count + ")";
+					System.out.println("닉네임이" +nickBank + "으로");
+					count++;
+				}
+					
+			}
+			*/
+				
 		}
 		
 		public String nickRefresh(Object o) {
@@ -170,7 +209,7 @@ public class chatServer {
 		public void nickRefresh(String s) { // 문제 많은 함수.
 			String deadCheck;
 //			int deadCheck;
-			if(s.equals("2")){
+			if(s.equals("2")){ // 모두에게 닉네임 새로고침 보냄.
 
 				Iterator<Object> it = clientOutputStreams.iterator();
 				
@@ -191,7 +230,8 @@ public class chatServer {
 
 			}
 		
-			else if(s.equals("1"))
+			else if(s.equals("1")) // 해당 클라이언트 하나에게만 닉네임 새로고침 보냄.
+				// 생각해보면 nickRefresh("2")와 nickRefresh(writer)로 이 함수가 이제 필요없을 거 같다.
 			{
 				try {
 					writer.write("/nick/" + "\n");
@@ -240,17 +280,27 @@ public class chatServer {
 
 		
 		public void setNick() {
-			String s;
+//			String s;
 			try {
-				s = reader.readLine();
-				nickBank = s;
-				System.out.println("받은 닉네임은: " + s);
+//				s = reader.readLine();
+				nickBank = reader.readLine();
+//				nickBank = s;
+				System.out.println("받은 닉네임은: " + nickBank);
 				//System.out.println("닉네임 저장은: " + nickBank);
-				nickList.add(s);
+				
+				nickCheck();
+				
+				nickList.add(nickBank);
+				
+				Collections.sort(nickList); // nickList 오름차순 정렬.
+//				Collections.reverse(nickList); // nickList 내림차순 정렬.
+				
+				nickRefresh("2");
 			} catch (Exception e) {e.printStackTrace(); }
 			
-			nickRefresh("1");
-			nickRefresh("2");
+//			nickRefresh("1");
+//			nickCheck();
+			
 		}
 
 	

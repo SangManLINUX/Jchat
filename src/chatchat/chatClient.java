@@ -65,15 +65,11 @@ public class chatClient extends JFrame {
 		outgoing.addKeyListener(new MyKeyListener());
 		JButton sendButton = new JButton("전송");
 		sendButton.addActionListener(new SendButtonListener());
-		mainPanel.add(qScroller, BorderLayout.WEST);
-		mainPanel.add(outgoing, BorderLayout.CENTER);
-		mainPanel.add(sendButton, BorderLayout.EAST);
 		
-		mainPanel.add(lista, BorderLayout.SOUTH);
-		
-		
-//		setClient(); // 왜 만들었었지? 필요없는거 같은데
-		
+		mainPanel.add(qScroller, BorderLayout.CENTER);
+		mainPanel.add(outgoing, BorderLayout.SOUTH);
+//		mainPanel.add(sendButton, BorderLayout.NORTH);
+		mainPanel.add(lista, BorderLayout.EAST);
 		
 		
 //		setUpNetworking(); // 접속 버튼으로 옮겨야 한다.
@@ -192,7 +188,25 @@ public class chatClient extends JFrame {
 	}
 
 	private void setUpNetworking() {
+		/*
 		try {
+			if(sock.isBound()) {
+				System.out.println("이미 접속하기에 연결을 해지합니다.");
+				sock.close();
+			}
+		} catch(Exception e) {e.printStackTrace(); System.out.println("이미 접속했음.");}
+		*/
+		/*
+		if( sock.isConnected()) {
+			System.out.println("이미 접속하기에 연결을 해지합니다.");
+			try {
+				sock.close();
+			} catch(Exception e) {e.printStackTrace();}
+		}
+		*/
+			
+		try {
+			
 			sock = new Socket(info[0], Integer.valueOf(info[1]));
 			
 			streamReader = new InputStreamReader(sock.getInputStream());
@@ -200,11 +214,13 @@ public class chatClient extends JFrame {
 			reader = new BufferedReader(streamReader);
 			writer = new BufferedWriter(streamWriter);
 			
-			setMyNick(); //닉관련
+//			setMyNick(); //닉관련, 아래로 이사
 			
 			// 서버로부터 오는 리더기 생성.
 			readerThread = new Thread(new IncomingReader());
 			readerThread.start();
+			
+			setMyNick();
 			
 			System.out.println("Established...");
 			
@@ -215,17 +231,38 @@ public class chatClient extends JFrame {
 			menuItem[0].setEnabled(false); // 연결 버튼 비활성화
 			menuItem[1].setEnabled(true); //  연결해제 버튼 활성화
 			
+			outgoing.setEditable(true);			
 			
 		} catch(IOException e) {e.printStackTrace(); System.out.println("no2");}
 	}
 	
 	private void disconnect() {
 		try {
-			readerThread.interrupt();
+			writer.write("/disconnect/" + "\n");
+			writer.flush();
+			reader.close();
+//			reader.close();
+//			readerThread.interrupt();
 			sock.close(); // 소켓을 닫는다 인데 의도대로 안되는듯.
 			menuItem[0].setEnabled(true);
 			menuItem[1].setEnabled(false);
-		} catch(Exception e1) {e1.printStackTrace(); }
+			nickList.clear();
+			lista.setListData(nickList.toArray());
+			lista.repaint();
+			outgoing.setEditable(false);
+			
+		} catch(Exception e1) { // writer, reader, sock 중 어느것이 죽을때 걸림.
+			e1.printStackTrace();
+			System.out.println("Client socket down");
+			/*
+			try {
+				sock.close();
+				System.out.println("Client socket down");
+			} catch (Exception e2) {
+				System.out.println("예측하지 못한 결과");
+			}
+			*/
+		}
 	}
 	
 	public class MenuActionListener implements ActionListener {
@@ -244,8 +281,10 @@ public class chatClient extends JFrame {
 
 			if(cmd.equals("설정")) {
 				// 채팅프레임은 그대로 두고 설정 띄우기이다.
+				settingFrame.setVisible(true);
+//				chatFrame.setVisible(true);			}
 			}
-			
+		
 			if(cmd.equals("끝내기")) {
 				System.exit(0);
 			}
@@ -327,7 +366,7 @@ public class chatClient extends JFrame {
 			}
 		}
 	
-	public void refreshNick() { // 문제 많은 함수.
+	public void refreshNick() {
 		nickList.clear();
 		
 		String message;
@@ -346,9 +385,7 @@ public class chatClient extends JFrame {
 		} catch (Exception e) { e.printStackTrace();}
 		 lista.setListData(nickList.toArray());
 		 lista.repaint();
-		 
-		 
-//		 lista = new JList(nickList.toArray()); // 작동을 안함. ArrayList 가공이 필요한듯.
+		 		 
 	}
 	
 	public class IncomingReader implements Runnable {
@@ -363,6 +400,12 @@ public class chatClient extends JFrame {
 						System.out.println("닉네임리스트가 온다");
 						refreshNick();
 						continue;
+					}
+					if(message.equals("/denied/"))
+					{
+//						System.out.println("사용중인 닉네임입니다.");
+						incoming.append("<SYSTEM> 사용중인 닉네임입니다.");
+						break;
 					}
 					System.out.println("read " + message);
 					incoming.append(message + "\n");
