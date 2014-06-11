@@ -16,6 +16,7 @@ public class chatClient extends JFrame {
 	JFrame settingFrame; // 설정창
 	JPanel mainPanel; // 채팅창 패널
 	JScrollPane qScroller; // 스크롤팬
+	JTabbedPane tabPane; // 채팅창 탭팬
 
 	JMenuBar mb; // 메뉴바
 	JMenu fileMenu; // 파일 메뉴
@@ -84,10 +85,14 @@ public class chatClient extends JFrame {
 		qScroller.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
 		qScroller.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
 		
+		tabPane = createTabbedPane();
+		
 		outgoing = new JTextField(20);
 		outgoing.addKeyListener(new MyKeyListener());
+		
 
-		mainPanel.add(qScroller, BorderLayout.CENTER);
+		mainPanel.add(tabPane, BorderLayout.CENTER);
+//		mainPanel.add(qScroller, BorderLayout.CENTER);
 		mainPanel.add(outgoing, BorderLayout.SOUTH);
 		mainPanel.add(lista, BorderLayout.EAST);
 
@@ -98,6 +103,17 @@ public class chatClient extends JFrame {
 		chatFrame.setVisible(false); // 메인 프레임은 기본적으로 안보인다.
 	}
 
+
+	JTabbedPane createTabbedPane() {
+		JTabbedPane pane = new JTabbedPane(JTabbedPane.NORTH);
+		pane.addTab("tab1", qScroller);
+//		pane.addTab("tab1", new JPanel());
+		pane.addTab("tab2", new JPanel());
+		pane.addTab("tab3", new JPanel());
+		return pane;	
+	}
+
+	
 	private void createLogin() {
 		settingFrame = new JFrame("접속 설정");
 		JPanel oPanel = new JPanel();
@@ -476,6 +492,9 @@ public class chatClient extends JFrame {
 						try{
 							File snd = new File("Calling.wav");								// 호출 시 출력될 사운드 파일.
 							FileInputStream fis = new FileInputStream(snd);
+							
+
+							// 구식의 레퍼런스 사용으로 컴파일러가 권장 아니합니다.
 							AudioStream as = new AudioStream(fis);
 							AudioPlayer.player.start(as);
 						}catch(Exception e){
