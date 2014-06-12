@@ -8,14 +8,18 @@ import javax.swing.*;
 public class chatServer {
 
 	ArrayList<Object> clientOutputStreams;
-	ArrayList<String> nickList;
-
-
+	ArrayList<String> nickList; // 이제 필요없을듯 허다.
+	ArrayList<String[]> abd;
+//	HashMap<String, Object> newClientOutputStreams; // 대화방명, 클라이언트 writer
+	HashMap<String, Object> newNickList; // 닉네임, 닉네임이 들어간 대화방 ArrayList
 
 	chatServer() {
 
 		clientOutputStreams = new ArrayList<Object>();
 		nickList = new ArrayList<String>();	
+//		newClientOutputStreams = new HashMap<String, Object>();
+		newNickList = new HashMap<String, Object>();
+	
 
 		nickList.add("Test1");
 		nickList.add("Test2");
@@ -80,8 +84,11 @@ public class chatServer {
 		OutputStreamWriter osr;
 		BufferedWriter writer;
 		Socket sock;
-		String firstNick;
+		String firstNick; // 안쓰인다...?
 		String nickBank; // 클라이언트소켓 닉네임 기억용.
+		String defaultChatRoom; // 기본적으로 접속되는 system 방.
+		ArrayList<String> chatRooms = new ArrayList<String>();
+		List<String> SortedKeys; // HashMap의 keys만 모아서 정렬시키는 거.
 
 		public ClientHandler(Socket clientSocket) {
 			try {
@@ -101,9 +108,14 @@ public class chatServer {
 
 			try {
 				while((message = reader.readLine()) != null) {
-					if(message.equals("/nick/"))
+					if(message.equals("/nick"))
 					{
 						setNick();
+						continue;
+					}
+					if(message.equals("/join"))
+					{
+						setChatroom();
 						continue;
 					}
 					if(message.equals("/disconnect/"))
@@ -123,6 +135,7 @@ public class chatServer {
 					sock.close();
 					System.out.println("Client down");
 					nickList.remove(nickBank);
+					newNickList.remove(nickBank); // 접속종료된 닉네임의 HaspMap 제거.
 					nickRefresh("2");
 				} catch (Exception e1) {
 					System.out.println("Server down");
@@ -130,6 +143,23 @@ public class chatServer {
 				}
 		}
 
+		public void nickCheck() {
+			Collection<String> coll = newNickList.keySet();
+			Iterator<String> it = coll.iterator();
+			
+			while(it.hasNext()) {
+				if(it.next().compareTo(nickBank) == 0) { // 작동 확인 됨.
+					System.out.println("닉네임이 같은게 있다.");
+					try {
+						writer.write("/denied/" + "\n");
+						writer.flush();
+						sock.close();
+
+					} catch(Exception e) {e.printStackTrace();}
+				}
+			}
+
+/* 단일 채팅 방식의 함수		
 		public void nickCheck() {
 			Iterator<String> it = nickList.iterator();
 			while(it.hasNext()) {
@@ -143,8 +173,9 @@ public class chatServer {
 					} catch(Exception e) {e.printStackTrace();}
 				}
 			}
+*/
 
-			/*
+/* 이게 뭐더라? 닉네임 거절말고 뒤로 숫자를 부여하는 함수던가.
 			int count = 1;
 			String nickName = nickBank;
 			Iterator<String> it = nickList.iterator();
@@ -157,10 +188,84 @@ public class chatServer {
 				}
 					
 			}
-			*/
+*/
 
 		}
 
+		public String nickRefresh(Object o) {
+			BufferedWriter writer = (BufferedWriter)o;
+
+			try {
+				writer.write("/nick/" + "\n");
+				writer.flush();
+				System.out.println("닉네임 리스트 전송 시작");
+			} catch (SocketException sc) {
+				System.out.println("소켓이 닫힌 오브젝트드아(nickRefresh로부터)");
+				return "/dead/";
+
+			}
+			catch (Exception e) {
+				e.printStackTrace();
+				System.out.println("1여기다.");
+				} 
+			
+			Collection<String> coll = newNickList.keySet();
+			Iterator<String> itForKey = coll.iterator();
+
+//			Iterator<String> it = nickList.iterator();
+			while(itForKey.hasNext()) {
+				try {
+					String key;
+					String value;
+
+					// Key값을 보내고,
+					writer.write( "/key/" + "\n" + (key = itForKey.next() ) + "\n");
+					// 괄호 안씌우니까 개행까지 들어간다.
+					writer.flush();
+					System.out.println("key값인 " + key + " 을 전송과");
+					
+					// Key의 Value 들을 보낸다.
+					Iterator<String> itForValue;
+					// 현재 초기접속시 key 값이 null 이기에 문제 발생.(해결)
+					
+//					System.out.println((newNickList.get(key).getClass())); // value 클래스 확인용
+					// String을 ArrayList로 형변환 할수 없다고?? (해결)
+					ArrayList<String> arrayForValue = (ArrayList)newNickList.get(key);
+					itForValue = arrayForValue.iterator();
+					
+					while(itForValue.hasNext())
+					{
+						writer.write( "/value/" + "\n" + (value = itForValue.next()) + "\n");
+						// 괄호 안씌우니까 개행까지 들어간다.
+						writer.flush();
+						System.out.println("value인 " + value + " 을 전송");
+						
+						if(itForValue.hasNext() == false)
+						{
+							writer.write("/next/" + "\n");
+							writer.flush();
+						}
+					}
+
+					if(itForKey.hasNext() == false)
+					{
+						System.out.println("닉네임 리스트 꼬리 전송");
+						writer.write("/nick/" + "\n");
+						writer.flush();
+					}
+
+					} catch(Exception e) {
+						e.printStackTrace(); 
+						//System.out.println("no2.1");
+						System.out.println("1저기다.");
+						}
+				}
+			System.out.println("닉네임 리스트 전송 종료");		
+
+			return "/fine/";
+		}
+		
+/* 단일 채팅 전용 함수 
 		public String nickRefresh(Object o) {
 			BufferedWriter writer = (BufferedWriter)o;
 
@@ -205,10 +310,10 @@ public class chatServer {
 
 			return "/fine/";
 		}
-
-		public void nickRefresh(String s) { // 문제 많은 함수.
+*/
+		public void nickRefresh(String s) {
 			String deadCheck;
-//			int deadCheck;
+			
 			if(s.equals("2")){ // 모두에게 닉네임 새로고침 보냄.
 
 				Iterator<Object> it = clientOutputStreams.iterator();
@@ -222,6 +327,9 @@ public class chatServer {
 						{
 							it.remove();
 							deadCheck = null;
+							// 스트림용 말고도 닉네임 리스트에서도 지울 필요가 있는데,
+							// 여기서는 불가능하고 함수를 만들어야한다.
+							// 클라이언트에서 
 						}			
 
 					} catch(Exception e) {e.printStackTrace(); System.out.println("가나다");}
@@ -230,55 +338,48 @@ public class chatServer {
 
 			}
 
-			else if(s.equals("1")) // 해당 클라이언트 하나에게만 닉네임 새로고침 보냄.
-				// 생각해보면 nickRefresh("2")와 nickRefresh(writer)로 이 함수가 이제 필요없을 거 같다.
-			{
-				try {
-					writer.write("/nick/" + "\n");
-					writer.flush();
-					System.out.println("닉네임 리스트 전송 시작");
-				} catch (Exception e) {
-					e.printStackTrace();
-					System.out.println("2여기다.");
-					} 
-
-				Iterator<String> it = nickList.iterator();
-				while(it.hasNext()) {
-					try {
-						String test;
-						/*
-						if(it.hasNext() == false) // 조건이 안걸린다. "\n" 때문일까. 
-						{
-							System.out.println("닉네임 리스트 꼬리 전송");
-							writer.write("/nick/");
-							writer.flush();
-						}
-						*/
-						writer.write(test = it.next() + "\n");
-
-						System.out.println(test + " 을 전송");
-						writer.flush();
-
-						if(it.hasNext() == false)
-						{
-							System.out.println("닉네임 리스트 꼬리 전송");
-							writer.write("/nick/" + "\n");
-							writer.flush();
-						}
-
-						} catch(Exception e) {
-							e.printStackTrace(); 
-							//System.out.println("no2.1");
-							System.out.println("2저기다.");
-							}
-					}
-				System.out.println("닉네임 리스트 전송 종료");
-
-			}
-
 		}
 
+		public void setNick() { // 처음 접속 일회용
+//			String s;
+			try {
+//				s = reader.readLine();
+				nickBank = reader.readLine();
+//				nickBank = s;
+				System.out.println("받은 닉네임은: " + nickBank);
+				defaultChatRoom = reader.readLine();
+				//System.out.println("닉네임 저장은: " + nickBank);
+				System.out.println("받은 기본 대화방은: " + defaultChatRoom);
 
+				nickCheck();
+
+				// value가 null이기에 위에서 다룰때 문제 발생.
+//				newNickList.put(nickBank, null);
+				
+				chatRooms.add(defaultChatRoom);
+				
+				// 아, 내가 String을 넣었었구나...(해결)
+//				newNickList.put(nickBank, defaultChatRoom);
+				newNickList.put(nickBank, chatRooms);
+				
+				// Keys만 따로 정렬하는 용도.
+				List<String> SortedKeys = new ArrayList<String>(newNickList.keySet());
+				Collections.sort(SortedKeys);
+				
+				writer.write("/joined/" + "\n" + defaultChatRoom + "\n");
+				writer.flush();
+				
+				nickRefresh("2");
+			} catch (Exception e) {e.printStackTrace(); }
+
+//			nickRefresh("1");
+//			nickCheck();
+
+		}
+		
+
+		
+/* 단일 채팅 전용 함수
 		public void setNick() {
 //			String s;
 			try {
@@ -301,6 +402,29 @@ public class chatServer {
 //			nickRefresh("1");
 //			nickCheck();
 
+		}
+*/		
+		public void setChatroom() {
+			String chatRoom;
+			try {
+				chatRoom = reader.readLine();
+				// ArrayList charRooms에 chatRoom과 중복된 값이 있다면, 거절해야한다. 
+				chatRooms.add(chatRoom);
+				newNickList.put(nickBank, chatRooms);
+				
+				// 이걸 왜 넣었지?
+//				writer.write("/nick/" + "\n");
+//				writer.flush();
+				
+				writer.write("/joined/" + "\n" + chatRoom + "\n");
+				writer.flush();
+				
+				nickRefresh("2");
+				
+				
+				
+				
+			} catch(Exception e) {e.printStackTrace(); }
 		}
 
 
