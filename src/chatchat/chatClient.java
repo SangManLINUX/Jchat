@@ -5,6 +5,7 @@ import java.net.*;
 import java.util.*;
 
 import javax.swing.*;
+import javax.swing.filechooser.*;
 import javax.sound.sampled.*;
 
 import java.awt.*;
@@ -22,7 +23,9 @@ public class chatClient extends JFrame {
 	JMenuBar mb; // 메뉴바
 	JMenu fileMenu; // 파일 메뉴
 	JMenuItem[] menuItem, menuImg, menuThema; // 메뉴아이템
-	
+	JFileChooser setCalling = new JFileChooser();	// '열기'창을 위한 JFileChooser.
+	File callingFile = new File("Calling.wav");		// 초기 호출음 기본값. 동 폴더 내에 있는 Calling.wav파일.
+
 //	ImageIcon bgImage;	// 이미지 파일
 //	String bgiRoute;	// 이미지 파일의 경로
 
@@ -49,7 +52,7 @@ public class chatClient extends JFrame {
 
 	Socket sock;
 	Thread readerThread; // 리더기 스레드
-	
+
 	Font serious = new Font("궁서체", Font.BOLD, 12);
 	Font hmrolls = new Font("휴먼굴림체", Font.ITALIC, 12);
 	Font nrfonts = new Font("굴림체", Font.BOLD, 12);
@@ -87,13 +90,13 @@ public class chatClient extends JFrame {
 		qScroller = new JScrollPane(incoming);
 		qScroller.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
 		qScroller.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-		
+
 		tabPane = createTabbedPane();
 		tabPane.addMouseListener(new TabActionListener());
-		
+
 		outgoing = new JTextField(20);
 		outgoing.addKeyListener(new MyKeyListener());
-		
+
 
 		mainPanel.add(tabPane, BorderLayout.CENTER);
 //		mainPanel.add(qScroller, BorderLayout.CENTER);
@@ -117,14 +120,14 @@ public class chatClient extends JFrame {
 		return pane;	
 	}
 
-	
+
 	private void createLogin() {
 		settingFrame = new JFrame("접속 설정");
 		JPanel oPanel = new JPanel();
 		settingFrame.add(oPanel);
 		oPanel.setLayout(null);
 		settingFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		
+
 		loginLabel = new JLabel[3];
 		String[] textForLabel = {"IP", "PORT", "NICK"};
 
@@ -171,17 +174,17 @@ public class chatClient extends JFrame {
 			fileMenu.add(menuItem[i]);
 		}
 		mb.add(fileMenu);
-		
+
 		fileMenu = new JMenu("기능");
 		menuImg = new JMenuItem [3];
-		String[] imgTitle = {"대화창 청소", "메시지 박스", "유저 리스트"};
+		String[] imgTitle = {"대화창 청소", "호출음 변경", "유저 리스트"};
 		for(int i=0; i<menuImg.length; i++) {
 			menuImg[i] = new JMenuItem(imgTitle[i]);
 			menuImg[i].addActionListener(new MenuActionListener());
 			fileMenu.add(menuImg[i]);
 		}
 		mb.add(fileMenu);
-		
+
 		fileMenu = new JMenu("테마");
 		menuThema = new JMenuItem [3];
 		String[] themaTitle = {"진지한", "굴리는", "눈아픈"};	
@@ -191,7 +194,7 @@ public class chatClient extends JFrame {
 			fileMenu.add(menuThema[i]);
 		}
 		mb.add(fileMenu);
-		
+
 
 
 		chatFrame.setJMenuBar(mb); // 우리는 frame이 최초의 두번째 컴포넌트를 쓴다.
@@ -225,28 +228,28 @@ public class chatClient extends JFrame {
 			chatRoom = reader.readLine();
 			// 탭팬을 새로 만든다.
 			tabPane.addTab(chatRoom, new JTextArea());
-			
-			
-			
+
+
+
 		} catch(Exception e) {e.printStackTrace(); }
 	}
-	
+
 	private void requestJoin() { // 처음 접속할 때 매개변수 없이
 		try {
 			writer.write("/join" + "\n" + "defaultChatRoom" + "\n");
 			writer.flush();
 		} catch(Exception e) {e.printStackTrace();}
 	}
-	
+
 	private void requestJoin(String s) { // 나중에 대화방 들어갈 때 매개변수로
 		try {
 			writer.write("/join" + "\n" + s + "\n");
 			writer.flush();
 		} catch(Exception e) {e.printStackTrace();}
 	}
-	
+
 	private void setUpNetworking() {
-		
+
 		try {
 
 			sock = new Socket(info[0], Integer.valueOf(info[1]));
@@ -265,7 +268,7 @@ public class chatClient extends JFrame {
 			setMyNick();
 
 			System.out.println("Established...");
-			
+
 			// 잠시 고려해봐야한다. 처음에는 setMyNick()이랑 같이 system을 보내버려서
 			// 작동되는 거로 확인, 이거 때문에 리스트 두번 받길래 오인함.
 //			requestJoin(defaultChatRoom);
@@ -302,12 +305,12 @@ public class chatClient extends JFrame {
 		}
 	}
 
-	
+
 	public class TabActionListener extends MouseAdapter {
 		boolean toggle = true;
 
 		public void mousePressed(MouseEvent e)  {
-			
+
 			// 탭 버튼의 이름을 가져올 함수가 필요하다.(문제)
 			String cmd = e.paramString(); // 이게 뭐여.
 			tabName = cmd;
@@ -315,7 +318,7 @@ public class chatClient extends JFrame {
 			System.out.println("현재 탭은 " + cmd + "입니다.");
 
 		}
-		
+
 		public void actionPerformed(ActionEvent e) {
 			String cmd = e.getActionCommand();
 			tabName = cmd;
@@ -349,20 +352,20 @@ public class chatClient extends JFrame {
 			if(cmd.equals("끝내기")) {
 				System.exit(0);
 			}
-			
+
 
 			if(cmd.equals("대화창 청소")) {							// 생각나서 넣어본 기능.
 				incoming.setText("");
 				incoming.append("<SYSTEM> 대화창을 청소하였습니다.\n");
 			}
-			
-			if(cmd.equals("메시지 박스")) {
-/*				bgImage = new ImageIcon("C:\\Users\\Administrator\\Documents\\chkn.jpg");
-			    incoming.validate();
-				incoming.repaint();*/
-				
+
+			if(cmd.equals("호출음 변경")) {
+				setCalling.setFileFilter(new FileNameExtensionFilter("wav", "wav"));	// 파일 필터.
+				setCalling.setMultiSelectionEnabled(false);								// 다중 선택할 수 없음.
+				if(setCalling.showOpenDialog(null) == JFileChooser.APPROVE_OPTION)		// 열기 대화 상자를 열고, 확인을 눌렀는지 체크.
+					callingFile = setCalling.getSelectedFile();							// 불러올 호출음의 경로에 선택한 파일 경로를 대입.
 			}
-			
+
 			if(cmd.equals("진지한")) {
 				qScroller.getViewport().setBackground(Color.BLACK);
 				incoming.setBackground(Color.BLACK);
@@ -376,7 +379,7 @@ public class chatClient extends JFrame {
 				lista.setFont(serious);
 				incoming.append("<SYSTEM> 테마 - 진지한\n");
 			}
-			
+
 			if(cmd.equals("굴리는")) {
 				incoming.setBackground(Color.LIGHT_GRAY);
 				incoming.setForeground(Color.darkGray);
@@ -389,7 +392,7 @@ public class chatClient extends JFrame {
 				lista.setFont(hmrolls);
 				incoming.append("<SYSTEM> 테마 - 굴리는\n");
 			}
-			
+
 			if(cmd.equals("눈아픈")) {
 				incoming.setBackground(Color.CYAN);
 				incoming.setForeground(Color.MAGENTA);
@@ -485,13 +488,13 @@ public class chatClient extends JFrame {
 				}
 			}
 		}
-	
+
 	public void sendingManager() {
 		String input; // 입력받은거
 		String command; // 명령어
 		String content; // 내용물
 		input = outgoing.getText();
-		
+
 //		if(command.startsWith("/join"))
 		if(input.startsWith("/join"))
 		{
@@ -500,7 +503,7 @@ public class chatClient extends JFrame {
 
 //			content = command.substring(command.indexOf(" "));
 //			content = content.trim();
-			
+
 			System.out.println("받은 문자열: " + input);
 			System.out.println("앞의 명령어: " + command);
 			System.out.println("내용물: " + content);
@@ -508,23 +511,23 @@ public class chatClient extends JFrame {
 //			System.out.println("받은 문자열: " + command);
 //			System.out.println("앞의 명령어: " + command.substring(1, command.indexOf(" ")-1 ) );
 //			System.out.println("내용물: " + content); // content 확인용
-			
+
 			try {
 				writer.write(command + "\n" + content + "\n");
 				writer.flush();
 			} catch(Exception e) { e.printStackTrace(); }
-			
+
 		}
-		
+
 //			if((message.substring(message.indexOf(": "))).contains(info[2])){	
 		else {
 			try {
 				writer.write(outgoing.getText()+"\n");
 				writer.flush();
 				} catch (Exception ex) {ex.printStackTrace(); System.out.println("no4");}
-			
+
 		}
-		
+
 	}
 
 	public void refreshNick() {
@@ -547,7 +550,7 @@ public class chatClient extends JFrame {
 					keyForNick = null;
 					arrayForValue.clear();
 				}
-				
+
 				// 지금 여기서 #이 들어올 이유가 없다. 닉네임인데.. 수정필요
 				if(message.startsWith("/key/"))
 				{
@@ -560,19 +563,19 @@ public class chatClient extends JFrame {
 					message = reader.readLine();
 					System.out.println("닉네임의 접속된 대화방: " + message + " 들어옴");
 					arrayForValue.add(message);
-					
+
 //					newNickList.put(message, value)
 				}
 
 			} 
 		} catch (Exception e) { e.printStackTrace();}
-		
+
 		Collection<String> coll = newNickList.keySet();
 //		Iterator<String> itForKey = coll.iterator();
 
 		lista.setListData(coll.toArray());
 		lista.repaint();
-		
+
 //		lista.setListData(nickList.toArray());
 //		lista.repaint();
 
@@ -628,28 +631,28 @@ public class chatClient extends JFrame {
 					System.out.println("read " + message);
 					incoming.append(message + "\n");					
 
-/*
+
 					if((message.substring(message.indexOf(": "))).contains(info[2])){		// 호출기능.
 						try{
-							File callingFile = new File("Calling.wav");
+//							File callingFile = new File("Calling.wav");
 							AudioInputStream callSound = AudioSystem.getAudioInputStream(callingFile);
 							Clip callClip = AudioSystem.getClip();
 							
 							callClip.open(callSound);
 							callClip.start();
-							File snd = new File("Calling.wav");								// 호출 시 출력될 사운드 파일.
+						/*	File snd = new File("Calling.wav");								// 호출 시 출력될 사운드 파일.
 							FileInputStream fis = new FileInputStream(snd);
 							
 
 							// 구식의 레퍼런스 사용으로 컴파일러가 권장 아니합니다.
 							AudioStream as = new AudioStream(fis);
-							AudioPlayer.player.start(as);
+							AudioPlayer.player.start(as);*/
 						}catch(Exception e){
 							e.printStackTrace();
 							System.out.println("Sound Error!!");
 						}
 					}
-*/
+
 				}
 			}
 			catch (IOException e) {
