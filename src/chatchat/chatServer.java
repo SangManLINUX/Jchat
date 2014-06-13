@@ -9,7 +9,7 @@ public class chatServer {
 
 	ArrayList<Object> clientOutputStreams;
 	ArrayList<String> nickList; // 이제 필요없을듯 허다.
-	ArrayList<String[]> abd;
+	ArrayList<String[]> abd; // 이게 뭐지?
 //	HashMap<String, Object> newClientOutputStreams; // 대화방명, 클라이언트 writer
 	HashMap<String, Object> newNickList; // 닉네임, 닉네임이 들어간 대화방 ArrayList
 
@@ -52,6 +52,28 @@ public class chatServer {
 			} catch(Exception e) {e.printStackTrace(); System.out.println("no1");}
 		}
 
+	// newNickList, nickBank, tabName을 이용하여 tabName에 해당하는 곳에만 보낸다.
+	public void tellEveryone(String tabName, String nickBank, String message) {
+
+		Iterator<Object> it = clientOutputStreams.iterator();
+
+		while(it.hasNext()) {
+			try {
+
+				BufferedWriter writer = (BufferedWriter)it.next();
+				writer.write("/say" + "\n" + tabName + "\n" + nickBank + "\n" + message + "\n");
+				writer.flush();
+
+			} catch(SocketException se) { 
+				System.out.println("소켓이 닫힌 오브젝트드아");
+				it.remove(); // 소켓이 닫힌 오브젝트를 제거.
+				}
+			catch(Exception e) {e.printStackTrace(); System.out.println("no2");}
+
+		}
+	}
+	
+/*	구식 단일 채팅 함수
 	// public void tellEveryone(String message) 을 	public class ClientHandler으로 이동.
 	// 이동 취소. 그러면 모든 클라이언트한테 보낼 소켓에 안닫는다.
 	public void tellEveryone(String nickBank,String message) {
@@ -74,9 +96,9 @@ public class chatServer {
 
 		}
 	}
-
+*/
+	
 	// nickRefresh 함수를 public class ClientHandler로 이사.
-
 
 	public class ClientHandler implements Runnable {
 		InputStreamReader isr;
@@ -104,7 +126,9 @@ public class chatServer {
 		}
 
 		public void run() {
-			String message;
+			String message; // 받은메시지
+			String tabName; // 대화방명
+			String content; // 대화내용
 
 			try {
 				while((message = reader.readLine()) != null) {
@@ -118,6 +142,30 @@ public class chatServer {
 						setChatroom();
 						continue;
 					}
+					if(message.equals("/say"))
+					{
+						System.out.println("말하기 받음.");
+						tabName = reader.readLine();
+						content = reader.readLine();
+						tellEveryone(tabName, nickBank, content);
+//						tellEveryone()
+						continue;
+					}
+					if(message.equals("/query"))
+					{
+						System.out.println("귓속말 생성 받음.");
+						setQuery();
+						continue;
+						//setChatroom();
+					}
+					if(message.equals("/sendQuery"))
+					{
+						System.out.println("귓속말 내용 받음.");
+						tabName = reader.readLine(); // 귓속말 대상
+						content = reader.readLine(); // 귓속말 내용
+						sendQuery(tabName, content);
+						continue;
+					}
 					if(message.equals("/disconnect/"))
 					{
 						sock.close();
@@ -126,8 +174,8 @@ public class chatServer {
 						nickRefresh("2");
 						continue;
 					}
-					System.out.println("받음 " + message);
-					tellEveryone(nickBank, message);
+//					System.out.println("받음 " + message);
+//					tellEveryone(nickBank, message);
 				}
 			} catch (Exception e) {
 				System.out.println("no4(normal)");
@@ -403,8 +451,8 @@ public class chatServer {
 //			nickCheck();
 
 		}
-*/		
-		public void setChatroom() {
+*/
+		public void setChatroom() { // 초기 후의 채팅방 생성 함수
 			String chatRoom;
 			try {
 				chatRoom = reader.readLine();
@@ -420,11 +468,36 @@ public class chatServer {
 				writer.flush();
 				
 				nickRefresh("2");
-				
-				
-				
-				
+						
 			} catch(Exception e) {e.printStackTrace(); }
+		}
+		
+		public void setQuery() {
+			String targetNick;
+			try {
+				targetNick = reader.readLine();
+				
+				writer.write("/joined/" + "\n" + targetNick + "\n");
+				writer.flush();
+			} catch(Exception e) {e.printStackTrace(); }
+		}
+		
+		public void sendQuery(String tabName, String content) {
+			BufferedWriter bw;
+			try {
+				// nickBank는 귓속말 보내는 곳, tabName 귓속말 대상, content 내용.
+				// 보내는 닉이 받는 닉에게 메시지를 보낸다.
+				Iterator<Object> it = clientOutputStreams.iterator();
+				while(it.hasNext())
+				{
+					bw = (BufferedWriter)it.next();
+					bw.write("/sendQuery/" + "\n" + nickBank + "\n" + tabName + "\n" + content + "\n");
+					writer.flush();
+				}
+//				writer.write("/sendQuery/" + "\n" + nickBank + "\n" + tabName + "\n" + content + "\n"); 
+//				writer.flush();
+			} catch(Exception e) {e.printStackTrace(); }
+
 		}
 
 

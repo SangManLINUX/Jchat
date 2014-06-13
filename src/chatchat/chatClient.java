@@ -6,6 +6,8 @@ import java.util.*;
 
 import javax.swing.*;
 import javax.swing.filechooser.*;
+import javax.swing.event.ChangeListener;
+import javax.swing.event.ChangeEvent;
 import javax.sound.sampled.*;
 
 import java.awt.*;
@@ -13,6 +15,7 @@ import java.awt.event.*;
 
 
 public class chatClient extends JFrame {
+	boolean clientOnOff = false; // 탭변경 이벤트에 대응해서 재접속시 오류 잡기 위함.
 	JFrame chatFrame; // 채팅창
 	JFrame settingFrame; // 설정창
 	JPanel mainPanel; // 채팅창 패널
@@ -29,20 +32,27 @@ public class chatClient extends JFrame {
 //	ImageIcon bgImage;	// 이미지 파일
 //	String bgiRoute;	// 이미지 파일의 경로
 
-	JTextArea incoming;
+//	JTextArea incoming; // 구식의 텍스트영역
+						// 나중에 incoming에 해당하는것을 다루려면 tabPane자체를 다루던가
+						// 탭이름에 해당하면 컴포넌트를 리턴하는 함수를 만들어야 할지도...
+	JTextArea newIncoming;
 	JTextField outgoing;
 
 	JLabel[] loginLabel;
 	JTextField[] loginTextField;
 	JButton[] loginButton;
 
-	ArrayList<String> nickList = new ArrayList<String>();
-	HashMap<String, Object> newNickList = new HashMap<String, Object>();// 닉네임, 닉네임이 들어간 대화방 ArrayList
+	// 닉리스트 전용으로 쓸까, 따로 컬렉터를 쓸까 고민중. 사용해야겠다.
+	ArrayList<String> nickList = new ArrayList<String>(); 
+	
+	// 닉네임, 닉네임이 들어간 대화방 ArrayList
+	HashMap<String, Object> newNickList = new HashMap<String, Object>();
 
 	String[] info = new String[3]; // IP, Port, NickName 순으로 들어감.
 	String defaultChatRoom = "system";
 
-	JList lista = new JList(nickList.toArray()); // 이상함.
+	// lista에 키만 가져온 ArrayList를 넣기
+	JList lista = new JList(nickList.toArray());
 
 	InputStreamReader streamReader;
 	OutputStreamWriter streamWriter;
@@ -71,7 +81,7 @@ public class chatClient extends JFrame {
 //		bgImage = new ImageIcon("");						// textArea에 채워넣을 이미지의 경로를 지정하는 부분.
 
 //		incoming = new JTextArea(15, 50);
-		incoming = new JTextArea() /*{						// 이미지를 불러들여 textArea에 채워넣는 부분. 여러 문제로 보류.
+/*		incoming = new JTextArea() {						// 이미지를 불러들여 textArea에 채워넣는 부분. 여러 문제로 보류.
 		      Image image = bgImage.getImage();
 
 		      Image grayImage = GrayFilter.createDisabledImage(image);
@@ -84,15 +94,18 @@ public class chatClient extends JFrame {
 		        super.paint(g);
 		      }
 		    }*/;
+		
+/* 구식 방식의 JTextArea
 		incoming.setLineWrap(true);
 		incoming.setWrapStyleWord(true);
 		incoming.setEditable(false);
 		qScroller = new JScrollPane(incoming);
 		qScroller.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
 		qScroller.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-
+*/
 		tabPane = createTabbedPane();
-		tabPane.addMouseListener(new TabActionListener());
+		tabPane.addChangeListener(new tabChangeListener()); // 탭변경리스너.
+//		tabPane.addMouseListener(new TabActionListener());
 
 		outgoing = new JTextField(20);
 		outgoing.addKeyListener(new MyKeyListener());
@@ -113,13 +126,12 @@ public class chatClient extends JFrame {
 
 	JTabbedPane createTabbedPane() {
 		JTabbedPane pane = new JTabbedPane(JTabbedPane.NORTH);
-		pane.addTab("System", qScroller);
-		pane.addTab("tab1", new JTextArea());
-		pane.addTab("tab2", new JTextArea());
+//		pane.addTab("System", qScroller);
+//		pane.addTab("tab1", new JTextArea());
+//		pane.addTab("tab2", new JTextArea());
 //		pane.addTab("tab3", new JPanel());
 		return pane;	
 	}
-
 
 	private void createLogin() {
 		settingFrame = new JFrame("접속 설정");
@@ -195,10 +207,7 @@ public class chatClient extends JFrame {
 		}
 		mb.add(fileMenu);
 
-
-
 		chatFrame.setJMenuBar(mb); // 우리는 frame이 최초의 두번째 컴포넌트를 쓴다.
-
 
 	}
 
@@ -222,12 +231,55 @@ public class chatClient extends JFrame {
 			} catch(Exception e) {e.printStackTrace(); System.out.println("no1");}
 	}
 
+	private void setQueryJoin(String receivedTabName, String receivedNick, String receivedMessage) {
+		String chatRoom;
+		try {
+			chatRoom = receivedTabName;
+			
+			newIncoming = new JTextArea();
+			
+			newIncoming.append(receivedNick + ": " + receivedMessage + "\n");
+			
+			newIncoming.setLineWrap(true);;
+			newIncoming.setWrapStyleWord(true);
+			newIncoming.setEditable(false);
+			qScroller = new JScrollPane(newIncoming);
+			qScroller.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
+			qScroller.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+			
+			// 탭팬을 새로 만든다.
+			tabPane.addTab(chatRoom, qScroller);
+//			tabPane.addTab(chatRoom, new JTextArea());
+			
+
+		} catch(Exception e) {e.printStackTrace(); }
+	}
+	
 	private void setJoin() {
 		String chatRoom;
 		try {
 			chatRoom = reader.readLine();
+			
+			newIncoming = new JTextArea();
+			
+			newIncoming.setLineWrap(true);;
+			newIncoming.setWrapStyleWord(true);
+			newIncoming.setEditable(false);
+			qScroller = new JScrollPane(newIncoming);
+			qScroller.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
+			qScroller.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+			
 			// 탭팬을 새로 만든다.
-			tabPane.addTab(chatRoom, new JTextArea());
+			tabPane.addTab(chatRoom, qScroller);
+//			tabPane.addTab(chatRoom, new JTextArea());
+			
+//			incoming.setLineWrap(true);
+//			incoming.setWrapStyleWord(true);
+//			incoming.setEditable(false);
+//			qScroller = new JScrollPane(incoming);
+//			qScroller.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
+//			qScroller.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+
 
 
 
@@ -251,6 +303,9 @@ public class chatClient extends JFrame {
 	private void setUpNetworking() {
 
 		try {
+			
+			
+			tabPane.removeAll();
 
 			sock = new Socket(info[0], Integer.valueOf(info[1]));
 
@@ -258,8 +313,6 @@ public class chatClient extends JFrame {
 			streamWriter = new OutputStreamWriter(sock.getOutputStream()); // OutputStreamWriter도 밖에서 미리 선언
 			reader = new BufferedReader(streamReader);
 			writer = new BufferedWriter(streamWriter);
-
-//			setMyNick(); //닉관련, 아래로 이사
 
 			// 서버로부터 오는 리더기 생성.
 			readerThread = new Thread(new IncomingReader());
@@ -269,11 +322,6 @@ public class chatClient extends JFrame {
 
 			System.out.println("Established...");
 
-			// 잠시 고려해봐야한다. 처음에는 setMyNick()이랑 같이 system을 보내버려서
-			// 작동되는 거로 확인, 이거 때문에 리스트 두번 받길래 오인함.
-//			requestJoin(defaultChatRoom);
-//			requestJoin(); 
-
 			// 프레임 전환
 			settingFrame.setVisible(false);
 			chatFrame.setVisible(true);
@@ -281,9 +329,11 @@ public class chatClient extends JFrame {
 			menuItem[0].setEnabled(false); // 연결 버튼 비활성화
 			menuItem[1].setEnabled(true); //  연결해제 버튼 활성화
 
-			outgoing.setEditable(true);			
+			outgoing.setEditable(true);
+			
+			clientOnOff = true;
 
-		} catch(IOException e) {e.printStackTrace(); System.out.println("no2");}
+		} catch(IOException e) {e.printStackTrace(); System.out.println("no2"); clientOnOff = false;}
 	}
 
 	private void disconnect() {
@@ -295,36 +345,346 @@ public class chatClient extends JFrame {
 			menuItem[0].setEnabled(true);
 			menuItem[1].setEnabled(false);
 			nickList.clear();
-			lista.setListData(nickList.toArray());
+			
+			// 신식 방식(HashMap의 키만 컬렉터에 넣고			
+			Collection<String> coll = newNickList.keySet();
+//			Iterator<String> itForKey = coll.iterator();
+
+			// 컬렉터를 toarray로 lista에 업데이트
+			lista.setListData(coll.toArray());
 			lista.repaint();
+			
+			// 구식 방식
+//			lista.setListData(nickList.toArray());
+//			lista.repaint();
 			outgoing.setEditable(false);
+			
+			clientOnOff = false;
 
 		} catch(Exception e1) { // writer, reader, sock 중 어느것이 죽을때 걸림.
 			e1.printStackTrace();
 			System.out.println("Client socket down");
 		}
 	}
+	
 
+	private void sendingManager() {
+		String input; // 입력받은거
+		String command; // 명령어
+		String content; // 내용물
+		input = outgoing.getText();
+		
+		// 여기서 귓속말일 때는 앞에 #이 없으니, 귓속말 탭에서 보낸다면 다르게 보낸다.
+		
+		if(input.startsWith("/"))
+		{
+			command = input.substring(0, input.indexOf((" "))); // 첫번째부터 공백까지
+			content = input.substring(input.indexOf(" ")).trim(); // 공백부터 뒤에 앞뒤로 공백제거
+		}
+		else if(tabName.startsWith("#"))
+		{
+			command = "/sendQuery";
+			content = input;
+		}
+		else
+		{
+			command = "/say";
+			content = input;
+		}
 
-	public class TabActionListener extends MouseAdapter {
-		boolean toggle = true;
+		System.out.println("받은 문자열: " + input);
+		System.out.println("앞의 명령어: " + command);
+		System.out.println("내용물: " + content);
 
-		public void mousePressed(MouseEvent e)  {
+//		if(input.startsWith("/join"))
+		if(command.startsWith("/join"))
+		{
+			try {
+				writer.write(command + "\n" + content + "\n");
+				writer.flush();
+				} catch(Exception e) { e.printStackTrace(); }
+		}
+//		if(input.startsWith("/say"))
+		if(command.startsWith("/query"))
+		{
+			try {
+				writer.write(command + "\n" + content + "\n");
+				writer.flush();
+			} catch(Exception e) { e.printStackTrace(); }
+		}
+		if(command.startsWith("/sendQuery"))
+		{
+			try {
+				writer.write(command + "\n" + tabName + "\n" + content + "\n");
+				writer.flush();
+			} catch(Exception e) { e.printStackTrace(); }
+		}
+		if(command.startsWith("/say"))
+		{
+			try {
+				writer.write(command + "\n" + tabName + "\n" + content + "\n");
+				writer.flush();
+				} catch(Exception e) { e.printStackTrace(); }		
+		}
+		else
+		{
+			System.out.println("잘못된 입력입니다.");
+		}
+/*		
+		else {
+			try {
+				writer.write(outgoing.getText()+"\n");
+				writer.flush();
+				} catch (Exception ex) {ex.printStackTrace(); System.out.println("no4");}
 
-			// 탭 버튼의 이름을 가져올 함수가 필요하다.(문제)
-			String cmd = e.paramString(); // 이게 뭐여.
-			tabName = cmd;
+		}
+*/
 
-			System.out.println("현재 탭은 " + cmd + "입니다.");
+	}
+	
+	private void receivingManager()
+	{
+		String receivedTabName;
+		String receivedNick;
+		String receivedMessage;
+		JTabbedPane tp; // 해당하는 탭팬을 담을 곳.
+		JScrollPane sp; // 해당하는 스크롤팬 담을 곳.
+		JTextArea ta; // 해당하는 텍스트영역 담을 곳.
+		
+		
+
+		try {
+			receivedTabName = reader.readLine(); // 귓속말시 nickBank가 여기로 들어감.
+			receivedNick = reader.readLine();
+			receivedMessage = reader.readLine();
+			
+			for( int i = 0; i < tabPane.getTabCount(); i++)
+			{
+				if(tabPane.getTitleAt(i).equals(receivedTabName))
+				{
+					System.out.println(receivedTabName + " 에 해당하는 탭 발견");
+//					tp = tabPane.getComponentAt(i);
+					sp = (JScrollPane)tabPane.getComponentAt(i);
+					// 스크롤팬의 sp의 컴포넌트를 가져와 ta에 넣음.
+					ta = (JTextArea)sp.getViewport().getView();
+					//ta = (JTextArea)sp.getComponent(0);
+					ta.append(receivedNick + ": " + receivedMessage + "\n");
+				}
+				else
+				{
+					System.out.println(receivedTabName + "로 부터 새로운 귓속말 받음");
+					setQueryJoin(receivedTabName, receivedNick, receivedMessage);
+					
+				}
+			}
+//			tabPane.getTabCount();
+			
+//			tabPane.getTitleAt(index);
+			
+			//  tabName = sourceTabbedPane.getTitleAt(index);
+			
+			
+			
+			
+			
+		} catch(Exception e) { e.printStackTrace(); }
+		
+		// 클라이언트의 tabName에 인덱스를 for문을 돌려서 이름이 receivedTabName과
+		// 같은 탭의 컴포넌트(아마스크롤달린 JPanel)에 receivedNick과 receivedMessage를 넣는다.
+		
+		//writer.write("/say" + "\n" + tabName + "\n" + nickBank + "\n" + message + "\n");
+		
+	}
+
+/* 이전 단일 채팅 전용 함수.	
+	private void sendingManager() {
+		String input; // 입력받은거
+		String command; // 명령어
+		String content; // 내용물
+		input = outgoing.getText();
+
+//		if(command.startsWith("/join"))
+		if(input.startsWith("/join"))
+		{
+			command = input.substring(0, input.indexOf((" "))); // 첫번째부터 공백까지
+			content = input.substring(input.indexOf(" ")).trim(); // 공백부터 뒤에 앞뒤로 공백제거
+
+//			content = command.substring(command.indexOf(" "));
+//			content = content.trim();
+
+			System.out.println("받은 문자열: " + input);
+			System.out.println("앞의 명령어: " + command);
+			System.out.println("내용물: " + content);
+
+//			System.out.println("받은 문자열: " + command);
+//			System.out.println("앞의 명령어: " + command.substring(1, command.indexOf(" ")-1 ) );
+//			System.out.println("내용물: " + content); // content 확인용
+
+			try {
+				writer.write(command + "\n" + content + "\n");
+				writer.flush();
+				} catch(Exception e) { e.printStackTrace(); }
+		}
+
+//			if((message.substring(message.indexOf(": "))).contains(info[2])){	
+		else {
+			try {
+				writer.write(outgoing.getText()+"\n");
+				writer.flush();
+				} catch (Exception ex) {ex.printStackTrace(); System.out.println("no4");}
 
 		}
 
-		public void actionPerformed(ActionEvent e) {
-			String cmd = e.getActionCommand();
-			tabName = cmd;
-			System.out.println("현재 탭은 " + tabName + "입니다.");
-			}
+	}
+*/
 
+	private void refreshNick(String s) {
+		System.out.println("해당 대화방의 닉네임 리스트로 변경중");
+		nickList.clear(); // ArrayList 초기화
+		
+		// newNickList의 value의 ArrayList중에서 대화방명인 String s을 가지는
+		// ArrayList인 value의 key(닉네임)를 가져와서 ArrayList에 넣고 repaint로 lista에 새로고침.
+		// 그러고보면 매개변수가 없는 refreshNick()에 repaint는 필요없을듯하다.
+		// 처음 접속시 system이니까 거기에 이 함수가 걸리도록 하면 될거 같다.
+		
+		Collection<String> collForKey = newNickList.keySet();
+		Iterator<String> itForKey = collForKey.iterator();
+		
+		while(itForKey.hasNext()) {
+			String key;
+			key = itForKey.next();
+			System.out.println("먼저 닉네임이 " + key + " 일 때");
+			// 왠지 이쯤에서 문제 발생.(refreshNick()에서 해결)
+			Object o = newNickList.get(key);
+			ArrayList<String> arForValue = (ArrayList)o;
+//			ArrayList<String> arForValue = (ArrayList)newNickList.get(key);
+			Iterator<String> itForValue = arForValue.iterator();
+			while(itForValue.hasNext()) {
+				System.out.println("대조시도");
+				if(itForValue.next().equals(s))
+				{
+					System.out.println("해당 대화방명 " + s + " 을 " + key + " 에서 발견");
+					nickList.add(key);
+					break;
+				}
+			}
+		}
+		
+//		Collection<String> coll = newNickList.keySet();
+//		Iterator<String> itForKey = coll.iterator();
+
+		// 새로 구성한 ArrayList nickList로 새로고침.
+		lista.setListData(nickList.toArray());
+		lista.repaint();
+		
+	}
+	
+	private void refreshNick() {
+		newNickList.clear();
+//		ArrayList<String> arrayForValue = new ArrayList<String>();
+		ArrayList<String> arrayForValue = null;
+
+		String message;
+		String keyForNick = null;
+		try {
+			while( (message = reader.readLine()) != null) {
+
+				if(message.equals("/nick/")) // 기묘함.
+				{
+					System.out.println("닉네임 리스트 꼬리 받음");
+					break;
+				}
+				if(message.equals("/next/"))
+				{
+					System.out.println("다음 키!");
+					newNickList.put(keyForNick, arrayForValue);
+					keyForNick = null;
+					// arrayForValue.clear()하니 newNickList에 들어가는 오브젝트도 숭당 날라간다.
+					// 매번 ArrayList를 새로 생성하니 된다.
+//					arrayForValue.clear();
+				}
+
+				// 지금 여기서 #이 들어올 이유가 없다. 닉네임인데.. 수정필요
+				if(message.startsWith("/key/"))
+				{
+					message = reader.readLine();
+					System.out.println("닉네임 리스트의 Key: " + message + " 받음");
+					keyForNick = message;
+					arrayForValue = new ArrayList<String>();
+				}
+				if(message.startsWith("/value/"))
+				{
+					message = reader.readLine();
+					System.out.println("닉네임의 접속된 대화방: " + message + " 들어옴");
+					arrayForValue.add(message);
+
+//					newNickList.put(message, value)
+				}
+
+			} 
+		} catch (Exception e) { e.printStackTrace();}
+
+		refreshNick("system");
+		
+/* 새로운 refreshNick(String s)로 여기에 repaint할 필요없다.
+		Collection<String> coll = newNickList.keySet();
+//		Iterator<String> itForKey = coll.iterator();
+
+		lista.setListData(coll.toArray());
+		lista.repaint();
+
+//		lista.setListData(nickList.toArray());
+//		lista.repaint();
+*/
+
+	}
+/* 단일 채팅 전용 함수	
+	public void refreshNick() {
+		nickList.clear();
+
+		String message;
+		try {
+			while( (message = reader.readLine()) != null) {
+
+				if(message.equals("/nick/")) // 기묘함.
+				{
+					System.out.println("닉네임 리스트 꼬리 받음");
+					break;
+				}
+
+				System.out.println("닉네임" + message + "들어옴");
+				nickList.add(message);
+			} 
+		} catch (Exception e) { e.printStackTrace();}
+		 lista.setListData(nickList.toArray());
+		 lista.repaint();
+
+	}
+*/
+
+	private void tabSelector() {
+		outgoing.setText("");
+		outgoing.requestFocus();
+		refreshNick(tabName); // tabName을 매개변수로 보냄. 오버로딩.
+		
+		
+	}
+	
+	public class tabChangeListener implements ChangeListener {
+	      public void stateChanged(ChangeEvent c) {
+	    	  if(clientOnOff == true)
+	    	  {
+	    		  JTabbedPane sourceTabbedPane = (JTabbedPane) c.getSource();
+	    		  int index = sourceTabbedPane.getSelectedIndex();
+	    		  tabName = sourceTabbedPane.getTitleAt(index);
+	    		  System.out.println("Tab changed to: " + tabName);
+	    		  tabSelector();
+  	        // 채팅창 변경(대화 기록)과 입력창 초기화, 닉네임 리스트 변경이 필요함.
+    		  
+	    	  }
+	     
+	        
+	      }
 	}
 
 	public class MenuActionListener implements ActionListener {
@@ -353,7 +713,7 @@ public class chatClient extends JFrame {
 				System.exit(0);
 			}
 
-
+/*
 			if(cmd.equals("대화창 청소")) {							// 생각나서 넣어본 기능.
 				incoming.setText("");
 				incoming.append("<SYSTEM> 대화창을 청소하였습니다.\n");
@@ -405,6 +765,7 @@ public class chatClient extends JFrame {
 				lista.setFont(nrfonts);
 				incoming.append("<SYSTEM> 테마 - 눈아픈\n");
 			}
+*/			
 		}
 	}
 
@@ -488,121 +849,7 @@ public class chatClient extends JFrame {
 				}
 			}
 		}
-
-	public void sendingManager() {
-		String input; // 입력받은거
-		String command; // 명령어
-		String content; // 내용물
-		input = outgoing.getText();
-
-//		if(command.startsWith("/join"))
-		if(input.startsWith("/join"))
-		{
-			command = input.substring(0, input.indexOf((" "))); // 첫번째부터 공백까지
-			content = input.substring(input.indexOf(" ")).trim(); // 공백부터 뒤에 앞뒤로 공백제거
-
-//			content = command.substring(command.indexOf(" "));
-//			content = content.trim();
-
-			System.out.println("받은 문자열: " + input);
-			System.out.println("앞의 명령어: " + command);
-			System.out.println("내용물: " + content);
-
-//			System.out.println("받은 문자열: " + command);
-//			System.out.println("앞의 명령어: " + command.substring(1, command.indexOf(" ")-1 ) );
-//			System.out.println("내용물: " + content); // content 확인용
-
-			try {
-				writer.write(command + "\n" + content + "\n");
-				writer.flush();
-			} catch(Exception e) { e.printStackTrace(); }
-
-		}
-
-//			if((message.substring(message.indexOf(": "))).contains(info[2])){	
-		else {
-			try {
-				writer.write(outgoing.getText()+"\n");
-				writer.flush();
-				} catch (Exception ex) {ex.printStackTrace(); System.out.println("no4");}
-
-		}
-
-	}
-
-	public void refreshNick() {
-		newNickList.clear();
-		ArrayList<String> arrayForValue = new ArrayList<String>();
-
-		String message;
-		String keyForNick = null;
-		try {
-			while( (message = reader.readLine()) != null) {
-
-				if(message.equals("/nick/")) // 기묘함.
-				{
-					System.out.println("닉네임 리스트 꼬리 받음");
-					break;
-				}
-				if(message.equals("/next/"))
-				{
-					newNickList.put(keyForNick, arrayForValue);
-					keyForNick = null;
-					arrayForValue.clear();
-				}
-
-				// 지금 여기서 #이 들어올 이유가 없다. 닉네임인데.. 수정필요
-				if(message.startsWith("/key/"))
-				{
-					message = reader.readLine();
-					System.out.println("닉네임 리스트의 Key: " + message + " 받음");
-					keyForNick = message;
-				}
-				if(message.startsWith("/value/"))
-				{
-					message = reader.readLine();
-					System.out.println("닉네임의 접속된 대화방: " + message + " 들어옴");
-					arrayForValue.add(message);
-
-//					newNickList.put(message, value)
-				}
-
-			} 
-		} catch (Exception e) { e.printStackTrace();}
-
-		Collection<String> coll = newNickList.keySet();
-//		Iterator<String> itForKey = coll.iterator();
-
-		lista.setListData(coll.toArray());
-		lista.repaint();
-
-//		lista.setListData(nickList.toArray());
-//		lista.repaint();
-
-	}
-/* 단일 채팅 전용 함수	
-	public void refreshNick() {
-		nickList.clear();
-
-		String message;
-		try {
-			while( (message = reader.readLine()) != null) {
-
-				if(message.equals("/nick/")) // 기묘함.
-				{
-					System.out.println("닉네임 리스트 꼬리 받음");
-					break;
-				}
-
-				System.out.println("닉네임" + message + "들어옴");
-				nickList.add(message);
-			} 
-		} catch (Exception e) { e.printStackTrace();}
-		 lista.setListData(nickList.toArray());
-		 lista.repaint();
-
-	}
-*/
+	
 	public class IncomingReader implements Runnable {
 		public void run() {
 
@@ -618,8 +865,8 @@ public class chatClient extends JFrame {
 					}
 					if(message.equals("/denied/"))
 					{
-//						System.out.println("사용중인 닉네임입니다.");
-						incoming.append("<SYSTEM> 사용중인 닉네임입니다.");
+						System.out.println("사용중인 닉네임입니다.");
+//						incoming.append("<SYSTEM> 사용중인 닉네임입니다.");
 						break;
 					}
 					if(message.equals("/joined/"))
@@ -628,31 +875,33 @@ public class chatClient extends JFrame {
 						setJoin();
 						continue;
 					}
-					System.out.println("read " + message);
-					incoming.append(message + "\n");					
+					if(message.equals("/say"))
+					{
+						System.out.println("메시지 받음");
+						receivingManager();
+						continue;
+					}
+					if(message.equals("/sendQuery/"))
+					{
+						System.out.println("귓속말 받음");
+						receivingManager();
+					}
+//					System.out.println("read " + message);
+//					incoming.append(message + "\n");					
 
-
+/* 지금 상태로 작동안할테니 일단 주석처리.
 					if((message.substring(message.indexOf(": "))).contains(info[2])){		// 호출기능.
 						try{
-//							File callingFile = new File("Calling.wav");
 							AudioInputStream callSound = AudioSystem.getAudioInputStream(callingFile);
-							Clip callClip = AudioSystem.getClip();
-							
+							Clip callClip = AudioSystem.getClip();							
 							callClip.open(callSound);
 							callClip.start();
-						/*	File snd = new File("Calling.wav");								// 호출 시 출력될 사운드 파일.
-							FileInputStream fis = new FileInputStream(snd);
-							
-
-							// 구식의 레퍼런스 사용으로 컴파일러가 권장 아니합니다.
-							AudioStream as = new AudioStream(fis);
-							AudioPlayer.player.start(as);*/
 						}catch(Exception e){
 							e.printStackTrace();
 							System.out.println("Sound Error!!");
 						}
 					}
-
+*/
 				}
 			}
 			catch (IOException e) {
