@@ -44,7 +44,7 @@ public class chatClient extends JFrame {
 
 	// 닉리스트 전용으로 쓸까, 따로 컬렉터를 쓸까 고민중. 사용해야겠다.
 	ArrayList<String> nickList = new ArrayList<String>(); 
-	
+
 	// 닉네임, 닉네임이 들어간 대화방 ArrayList
 	HashMap<String, Object> newNickList = new HashMap<String, Object>();
 
@@ -60,6 +60,9 @@ public class chatClient extends JFrame {
 	BufferedReader reader;
 	BufferedWriter writer;
 
+	String[] chatBuffered = new String [5];		// 이전까지 썼던 채팅 메시지를 5개까지 저장하는 공간.
+	String nickBuffered;						// 닉네임 자동완성을 위한 문자열 저장.
+	
 	Socket sock;
 	Thread readerThread; // 리더기 스레드
 
@@ -95,13 +98,14 @@ public class chatClient extends JFrame {
 		      }
 		    };
 */
-		
+
 //		tabPane = createTabbedPane();
-		
+
 		tabPane = new JTabbedPane(JTabbedPane.NORTH);    
 		tabPane.addChangeListener(new tabChangeListener()); // 탭변경리스너.
 
 		outgoing = new JTextField(20);
+		outgoing.setFocusTraversalKeysEnabled(false);
 		outgoing.addKeyListener(new MyKeyListener());
 
 		mainPanel.add(tabPane, BorderLayout.CENTER);
@@ -170,8 +174,8 @@ public class chatClient extends JFrame {
 		mb.add(fileMenu);
 
 		fileMenu = new JMenu("기능");
-		menuImg = new JMenuItem [3];
-		String[] imgTitle = {"대화창 청소", "호출음 변경", "유저 리스트"};
+		menuImg = new JMenuItem [2];
+		String[] imgTitle = {"대화창 청소", "호출음 변경"};
 		for(int i=0; i<menuImg.length; i++) {
 			menuImg[i] = new JMenuItem(imgTitle[i]);
 			menuImg[i].addActionListener(new MenuActionListener());
@@ -205,37 +209,37 @@ public class chatClient extends JFrame {
 		String chatRoom;
 		try {
 			chatRoom = receivedTabName;
-			
+
 			newIncoming = new JTextArea();			
 			newIncoming.append(receivedTabName + ": " + receivedMessage + "\n");			
 			newIncoming.setLineWrap(true);
 			newIncoming.setWrapStyleWord(true);
 			newIncoming.setEditable(false);
-			
+
 			qScroller = new JScrollPane(newIncoming);
 			qScroller.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
 			qScroller.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-			
+
 			// 탭팬을 새로 만든다.
 			tabPane.addTab(chatRoom, qScroller);
 
 		} catch(Exception e) {e.printStackTrace(); }
 	}
-	
+
 	private void setJoin() {
 		String chatRoom;
 		try {
 			chatRoom = reader.readLine();
-			
+
 			newIncoming = new JTextArea();
-			
+
 			newIncoming.setLineWrap(true);;
 			newIncoming.setWrapStyleWord(true);
 			newIncoming.setEditable(false);
 			qScroller = new JScrollPane(newIncoming);
 			qScroller.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
 			qScroller.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-			
+
 			// 탭팬을 새로 만든다.
 			tabPane.addTab(chatRoom, qScroller);
 
@@ -259,8 +263,8 @@ public class chatClient extends JFrame {
 	private void setUpNetworking() {
 
 		try {
-			
-			
+
+
 			tabPane.removeAll();
 
 			sock = new Socket(info[0], Integer.valueOf(info[1]));
@@ -286,7 +290,7 @@ public class chatClient extends JFrame {
 			menuItem[1].setEnabled(true); //  연결해제 버튼 활성화
 
 			outgoing.setEditable(true);
-			
+
 			clientOnOff = true;
 
 		} catch(IOException e) {e.printStackTrace(); System.out.println("no2"); clientOnOff = false;}
@@ -301,16 +305,16 @@ public class chatClient extends JFrame {
 			menuItem[0].setEnabled(true);
 			menuItem[1].setEnabled(false);
 			nickList.clear();
-			
+
 			// 신식 방식(HashMap)의 키만 컬렉터에 넣고			
 			Collection<String> coll = newNickList.keySet();
 
 			// 컬렉터를 toarray로 lista에 업데이트
 			lista.setListData(coll.toArray());
 			lista.repaint();
-			
+
 			outgoing.setEditable(false);
-			
+
 			clientOnOff = false;
 
 		} catch(Exception e1) { // writer, reader, sock 중 어느것이 죽을때 걸림.
@@ -318,16 +322,16 @@ public class chatClient extends JFrame {
 			System.out.println("Client socket down");
 		}
 	}
-	
+
 
 	private void sendingManager() {
 		String input; // 입력받은거
 		String command; // 명령어
 		String content; // 내용물
 		input = outgoing.getText();
-		
+
 		// 여기서 귓속말일 때는 앞에 #이 없으니, 귓속말 탭에서 보낸다면 다르게 보낸다.
-		
+
 		if(input.startsWith("/"))
 		{
 //			command = input.substring(0, input.indexOf((" "))); // 첫번째부터 공백까지
@@ -358,7 +362,7 @@ public class chatClient extends JFrame {
 			System.out.println("잘못된 입력.");
 			return;
 		}
-		
+
 		System.out.println("받은 문자열: " + input);
 		System.out.println("앞의 명령어: " + command);
 		System.out.println("내용물: " + content);
@@ -408,7 +412,7 @@ public class chatClient extends JFrame {
 		}
 
 	}
-	
+
 	private void receivingManager()
 	{
 		String receivedTabName;
@@ -423,10 +427,10 @@ public class chatClient extends JFrame {
 			receivedTabName = reader.readLine(); // 귓속말시 nickBank가 여기로 들어감.
 			receivedNick = reader.readLine();
 			receivedMessage = reader.readLine();
-			
+
 			// 참이면 일반 say, 거짓이면 쿼리.
 			sayQuerySwitch = receivedTabName.startsWith("#");
-			
+
 			// 귓속말 할때 보내는 닉이 내 클라의 닉과 같은때
 			// 내 닉이 쓴것도 내 클라에 떠야하니 조건을 건다.
 
@@ -442,9 +446,8 @@ public class chatClient extends JFrame {
 						// 스크롤팬의 sp의 컴포넌트를 가져와 ta에 넣음.
 						ta = (JTextArea)sp.getViewport().getView();
 						ta.append(receivedTabName + ": " + receivedMessage + "\n");
-						
-						tabExist = true; // 탭이 존재한다.
 
+						tabExist = true; // 탭이 존재한다.
 					}
 				}	
 			}			
@@ -460,7 +463,7 @@ public class chatClient extends JFrame {
 						// 스크롤팬의 sp의 컴포넌트를 가져와 ta에 넣음.
 						ta = (JTextArea)sp.getViewport().getView();
 						ta.append(receivedTabName + ": " + receivedMessage + "\n");
-						
+
 						tabExist = true; // 탭이 존재한다.
 					}
 				}
@@ -468,7 +471,7 @@ public class chatClient extends JFrame {
 			// 평범한 대화방 채팅
 			else if(sayQuerySwitch == true)
 			{	
-			
+
 				for( int i = 0; i < tabPane.getTabCount(); i++)
 				{
 					if(tabPane.getTitleAt(i).equals(receivedTabName))
@@ -478,8 +481,18 @@ public class chatClient extends JFrame {
 						// 스크롤팬의 sp의 컴포넌트를 가져와 ta에 넣음.
 						ta = (JTextArea)sp.getViewport().getView();
 						ta.append(receivedNick + ": " + receivedMessage + "\n");
-						
+
 						tabExist = true; // 탭이 존재한다.
+					}
+				}
+				if(receivedMessage.equals(info[2])) {	// 호출기능. 메시지가 완전히 '닉네임만'을 보내야 반응하도록 변경.(이전엔 메시지에 포함되기만 해도 호출.)
+					try{
+						AudioInputStream callSound = AudioSystem.getAudioInputStream(callingFile);
+						Clip callClip = AudioSystem.getClip();							
+						callClip.open(callSound);
+						callClip.start();
+					}catch(Exception e){
+						System.out.println("Sound Error!!");
 					}
 				}
 			}
@@ -493,27 +506,27 @@ public class chatClient extends JFrame {
 				System.out.println(receivedTabName + "로 부터 새로운 귓속말 받음");
 				setQueryJoin(receivedTabName, receivedNick, receivedMessage);
 			}
-			
+
 		} catch(Exception e) { e.printStackTrace(); }
-		
+
 		// (구식) 쿼리 구상
 		// 클라이언트의 tabName에 인덱스를 for문을 돌려서 이름이 receivedTabName과
 		// 같은 탭의 컴포넌트(아마스크롤달린 JPanel)에 receivedNick과 receivedMessage를 넣는다.
-		
+
 	}
 
 	private void refreshNick(String s) {
 		System.out.println("해당 대화방의 닉네임 리스트로 변경중");
 		nickList.clear(); // ArrayList 초기화
-		
+
 		// newNickList의 value의 ArrayList중에서 대화방명인 String s을 가지는
 		// ArrayList인 value의 key(닉네임)를 가져와서 ArrayList에 넣고 repaint로 lista에 새로고침.
 		// 그러고보면 매개변수가 없는 refreshNick()에 repaint는 필요없을듯하다.
 		// 처음 접속시 system이니까 거기에 이 함수가 걸리도록 하면 될거 같다.
-		
+
 		Collection<String> collForKey = newNickList.keySet();
 		Iterator<String> itForKey = collForKey.iterator();
-		
+
 		while(itForKey.hasNext()) {
 			String key;
 			key = itForKey.next();
@@ -532,13 +545,13 @@ public class chatClient extends JFrame {
 				}
 			}
 		}
-		
+
 		// 새로 구성한 ArrayList nickList로 새로고침.
 		lista.setListData(nickList.toArray());
 		lista.repaint();
-		
+
 	}
-	
+
 	private void refreshNick() {
 		newNickList.clear();
 		ArrayList<String> arrayForValue = null;
@@ -580,7 +593,7 @@ public class chatClient extends JFrame {
 		} catch (Exception e) { e.printStackTrace();}
 
 		refreshNick("system");
-		
+
 	}
 
 	private void tabSelector() {
@@ -588,7 +601,7 @@ public class chatClient extends JFrame {
 		outgoing.requestFocus();
 		refreshNick(tabName); // tabName을 매개변수로 보냄. 오버로딩.		
 	}
-	
+
 	private void exitor() {
 		for( int i = 0; i < tabPane.getTabCount(); i++)
 		{				
@@ -600,7 +613,7 @@ public class chatClient extends JFrame {
 			}
 		}	
 	}
-	
+
 	public class tabChangeListener implements ChangeListener {
 	      public void stateChanged(ChangeEvent c) {
 	    	  if(clientOnOff == true)
@@ -609,7 +622,7 @@ public class chatClient extends JFrame {
 	    		  int index = sourceTabbedPane.getSelectedIndex();
 	    		  tabName = sourceTabbedPane.getTitleAt(index);
 	    		  System.out.println("Tab changed to: " + tabName);
-	    		  
+
 	    		  // 채팅창 변경(대화 기록)과 입력창 초기화, 닉네임 리스트 변경이 필요함.(해결완료)
 	    		  tabSelector();  
 	    	  }
@@ -617,6 +630,9 @@ public class chatClient extends JFrame {
 	}
 
 	public class MenuActionListener implements ActionListener {
+		JScrollPane sp; // 해당하는 스크롤팬 담을 곳.
+		JTextArea ta; // 해당하는 텍스트영역 담을 곳.
+		
 		public void actionPerformed(ActionEvent e) {
 			String cmd = e.getActionCommand();
 
@@ -635,7 +651,7 @@ public class chatClient extends JFrame {
 				// 설정 창 재활성화 시 현재 설정중인 값을 textField에 복원.
 				for(int i=0; i<3; i++)							
 					loginTextField[i].setText(info[i]);
-				
+
 				settingFrame.setVisible(true);
 				settingFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 			}
@@ -644,11 +660,12 @@ public class chatClient extends JFrame {
 				System.exit(0);
 			}
 
-/* 일단 기능이지만 현재 불확실로 주석처리
- * 
+
 			if(cmd.equals("대화창 청소")) {							// 생각나서 넣어본 기능.
-				incoming.setText("");
-				incoming.append("<SYSTEM> 대화창을 청소하였습니다.\n");
+				sp = (JScrollPane)tabPane.getComponentAt(tabPane.getSelectedIndex());
+				ta = (JTextArea)sp.getViewport().getView();
+				ta.setText("");
+				ta.append("<SYSTEM> 대화창을 청소하였습니다.\n");
 			}
 
 			if(cmd.equals("호출음 변경")) {
@@ -656,48 +673,63 @@ public class chatClient extends JFrame {
 				setCalling.setMultiSelectionEnabled(false);								// 다중 선택할 수 없음.
 				if(setCalling.showOpenDialog(null) == JFileChooser.APPROVE_OPTION)		// 열기 대화 상자를 열고, 확인을 눌렀는지 체크.
 					callingFile = setCalling.getSelectedFile();							// 불러올 호출음의 경로에 선택한 파일 경로를 대입.
+				System.out.println("<SYSTEM> " + callingFile + "\t호출음 변경됨.");
 			}
 
 			if(cmd.equals("진지한")) {
-				qScroller.getViewport().setBackground(Color.BLACK);
-				incoming.setBackground(Color.BLACK);
-				incoming.setForeground(Color.WHITE);
-				incoming.setFont(serious);
+				for( int i = 0; i < tabPane.getTabCount(); i++)
+				{	
+					sp = (JScrollPane)tabPane.getComponentAt(i);
+					ta = (JTextArea)sp.getViewport().getView();
+					ta.setBackground(Color.BLACK);
+					ta.setForeground(Color.WHITE);
+					ta.setFont(serious);
+				}
 				outgoing.setBackground(Color.BLACK);
 				outgoing.setForeground(Color.WHITE);
 				outgoing.setFont(serious);
 				lista.setBackground(Color.BLACK);
 				lista.setForeground(Color.WHITE);
 				lista.setFont(serious);
-				incoming.append("<SYSTEM> 테마 - 진지한\n");
+				System.out.println("<SYSTEM> 테마 - 진지한");
 			}
 
 			if(cmd.equals("굴리는")) {
-				incoming.setBackground(Color.LIGHT_GRAY);
-				incoming.setForeground(Color.darkGray);
-				incoming.setFont(hmrolls);
+				for( int i = 0; i < tabPane.getTabCount(); i++)
+				{	
+					sp = (JScrollPane)tabPane.getComponentAt(i);
+					ta = (JTextArea)sp.getViewport().getView();
+					ta.setBackground(Color.LIGHT_GRAY);
+					ta.setForeground(Color.darkGray);
+					ta.setFont(hmrolls);
+				}
 				outgoing.setBackground(Color.LIGHT_GRAY);
 				outgoing.setForeground(Color.darkGray);
 				outgoing.setFont(hmrolls);
 				lista.setBackground(Color.LIGHT_GRAY);
 				lista.setForeground(Color.darkGray);
 				lista.setFont(hmrolls);
-				incoming.append("<SYSTEM> 테마 - 굴리는\n");
+				System.out.println("<SYSTEM> 테마 - 굴리는");
 			}
 
 			if(cmd.equals("눈아픈")) {
-				incoming.setBackground(Color.CYAN);
-				incoming.setForeground(Color.MAGENTA);
-				incoming.setFont(nrfonts);
+				for( int i = 0; i < tabPane.getTabCount(); i++)
+				{	
+					sp = (JScrollPane)tabPane.getComponentAt(i);
+					ta = (JTextArea)sp.getViewport().getView();
+					ta.setBackground(Color.CYAN);
+					ta.setForeground(Color.MAGENTA);
+					ta.setFont(nrfonts);
+				}
 				outgoing.setBackground(Color.CYAN);
 				outgoing.setForeground(Color.MAGENTA);
 				outgoing.setFont(nrfonts);
 				lista.setBackground(Color.CYAN);
 				lista.setForeground(Color.MAGENTA);
 				lista.setFont(nrfonts);
-				incoming.append("<SYSTEM> 테마 - 눈아픈\n");
+				System.out.println("<SYSTEM> 테마 - 눈아픈");
 			}
-*/			
+		
 		}
 	}
 
@@ -712,6 +744,7 @@ public class chatClient extends JFrame {
 						info[i] = loginTextField[i].getText();					
 					}
 					setUpNetworking();
+					outgoing.requestFocus();
 				} catch (Exception ex) {ex.printStackTrace(); System.out.println("Login Error!!");}
 			}
 			if(toggle)
@@ -747,6 +780,7 @@ public class chatClient extends JFrame {
 					info[i] = loginTextField[i].getText();					
 				}
 				setUpNetworking(); // 생성자에서 여기로 이사함.
+				outgoing.requestFocus();
 			}
 			else if(button.getText().equals("종료"))
 			{
@@ -754,18 +788,62 @@ public class chatClient extends JFrame {
 			}
 		}
 	}
-	
+
 	public class MyKeyListener extends KeyAdapter {
 		public void keyPressed(KeyEvent e) {
 			int keyCode = e.getKeyCode();
 			if (keyCode == 10 && outgoing.getText().length() != 0) {
 				sendingManager();
+				
+				if(!(outgoing.getText()).startsWith("/")) {		// chatBuffered에 '명령어가 아닌' 이전까지의 메시지를 집어넣는 부분.
+					chatBuffered[4] = chatBuffered[3];
+					chatBuffered[3] = chatBuffered[2];
+					chatBuffered[2] = chatBuffered[1];
+					chatBuffered[1] = chatBuffered[0];
+					chatBuffered[0] = outgoing.getText();
+				}
+				
 				outgoing.setText("");
 				outgoing.requestFocus();
-				}
 			}
+			
+			if (keyCode == 38) {
+				if((outgoing.getText()).equals(chatBuffered[0]))
+						outgoing.setText(chatBuffered[1]);
+				else if((outgoing.getText()).equals(chatBuffered[1]))
+					outgoing.setText(chatBuffered[2]);
+				else if((outgoing.getText()).equals(chatBuffered[2]))
+					outgoing.setText(chatBuffered[3]);
+				else if((outgoing.getText()).equals(chatBuffered[3]))
+					outgoing.setText(chatBuffered[4]);
+				else if((outgoing.getText()).equals(chatBuffered[4]))
+					outgoing.setText(chatBuffered[0]);
+				else
+					outgoing.setText(chatBuffered[0]);
+			}	// ↑를 눌렀을 경우 이전까지 보냈던 메시지를 5개까지 자동완성.
+			
+			if (keyCode == 40) {
+				if((outgoing.getText()).equals(chatBuffered[0]))
+					outgoing.setText(chatBuffered[4]);
+				else if((outgoing.getText()).equals(chatBuffered[1]))
+					outgoing.setText(chatBuffered[0]);
+				else if((outgoing.getText()).equals(chatBuffered[2]))
+					outgoing.setText(chatBuffered[1]);
+				else if((outgoing.getText()).equals(chatBuffered[3]))
+					outgoing.setText(chatBuffered[2]);
+				else if((outgoing.getText()).equals(chatBuffered[4]))
+					outgoing.setText(chatBuffered[3]);
+			}	// ↓를 눌렀을 경우 ↑의 역순으로 자동완성. 단, ↑키를 한 번이라도 눌러 '이전 메시지'를 불러와야만 작동함. 일부러 else를 제거했기 때문.
+			
+			if (keyCode == 9) {
+				nickBuffered = outgoing.getText();
+				for(int i=0; i<nickList.size(); i++)
+					if((nickList.get(i)).contains(nickBuffered))
+						outgoing.setText(nickList.get(i));
+			}	// 닉네임 앞부분을 입력 후 Tab을 누르면, 해당되는 닉네임 중 가장 마지막에 접속한 사람의 닉네임으로 자동완성.
 		}
-	
+	}
+
 	public class IncomingReader implements Runnable {
 		public void run() {
 
@@ -810,14 +888,13 @@ public class chatClient extends JFrame {
 						continue;
 					}
 
-/* 지금 상태로 작동안할테니 일단 주석처리.
- * 
-					if((message.substring(message.indexOf(": "))).contains(info[2])){		// 호출기능.
+/*					if((message.substring(message.indexOf(": "))).contains(info[2])){		// 호출기능.
 						try{
 							AudioInputStream callSound = AudioSystem.getAudioInputStream(callingFile);
 							Clip callClip = AudioSystem.getClip();							
 							callClip.open(callSound);
 							callClip.start();
+							System.out.println("Calling!!");
 						}catch(Exception e){
 							e.printStackTrace();
 							System.out.println("Sound Error!!");
