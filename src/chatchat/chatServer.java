@@ -134,6 +134,14 @@ public class chatServer {
 						sendQuery(tabName, content);
 						continue;
 					}
+					if(message.equals("/exit"))
+					{
+						System.out.println("대화방 나가기 받음.");
+						tabName = reader.readLine(); // 대화방명
+						doExit(tabName);
+						nickRefresh("2");
+						continue;
+					}
 					if(message.equals("/disconnect/"))
 					{
 						sock.close();
@@ -362,6 +370,47 @@ public class chatServer {
 				}
 			} catch(Exception e) {e.printStackTrace(); }
 
+		}
+		
+		public void doExit(String tabName) {
+			Collection<String> coll = newNickList.keySet();
+			Iterator<String> itForKey = coll.iterator();
+
+			while(itForKey.hasNext()) {
+				try {
+
+					String key;
+
+					// key값
+					key = itForKey.next();
+					if(key.equals(nickBank))
+					{
+						System.out.println("key값인 " + key + " 의");
+						
+//						System.out.println((newNickList.get(key).getClass())); // value 클래스 확인용
+						// String을 ArrayList로 형변환 할수 없다고?? (해결)
+						ArrayList<String> arrayForValue = (ArrayList)newNickList.get(key);
+						if( arrayForValue.contains(tabName) )
+						{
+							System.out.println(tabName + " 을 발견함.");
+						}
+						arrayForValue.remove(tabName);
+						if( arrayForValue.contains(tabName) == false )
+						{
+							System.out.println(tabName + " 을 제거함.");
+						}
+						writer.write("/exited/" + "\n");
+						writer.flush();
+						
+					}
+
+
+				} catch(Exception e) { e.printStackTrace(); }
+
+
+					
+				}
+			System.out.println("대화방 나가기 정리 종료");		
 		}
 
 	}

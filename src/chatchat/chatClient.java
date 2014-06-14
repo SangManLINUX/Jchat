@@ -330,8 +330,18 @@ public class chatClient extends JFrame {
 		
 		if(input.startsWith("/"))
 		{
-			command = input.substring(0, input.indexOf((" "))); // 첫번째부터 공백까지
-			content = input.substring(input.indexOf(" ")).trim(); // 공백부터 뒤에 앞뒤로 공백제거
+//			command = input.substring(0, input.indexOf((" "))); // 첫번째부터 공백까지
+			try {
+				command = input.substring(0, input.indexOf((" ")));
+				content = input.substring(input.indexOf(" ")).trim();
+			} 
+			catch(Exception e) 
+			{
+				System.out.println("이런 content 내용이 없다. /exit인가?");
+				command = input.trim();
+				content = null;
+			}
+//			content = input.substring(input.indexOf(" ")).trim(); // 공백부터 뒤에 앞뒤로 공백제거
 		}
 		else if(tabName.startsWith("#"))
 		{
@@ -380,6 +390,17 @@ public class chatClient extends JFrame {
 				writer.write(command + "\n" + tabName + "\n" + content + "\n");
 				writer.flush();
 				} catch(Exception e) { e.printStackTrace(); }		
+		}
+		else if(command.startsWith("/exit"))
+		{
+			if(tabName.startsWith("#") == false) {
+				exitor();
+				return;
+			}
+			try {
+				writer.write(command + "\n" + tabName + "\n");
+				writer.flush();
+			} catch(Exception e) { e.printStackTrace(); }
 		}
 		else
 		{
@@ -566,6 +587,18 @@ public class chatClient extends JFrame {
 		outgoing.setText("");
 		outgoing.requestFocus();
 		refreshNick(tabName); // tabName을 매개변수로 보냄. 오버로딩.		
+	}
+	
+	private void exitor() {
+		for( int i = 0; i < tabPane.getTabCount(); i++)
+		{				
+			if(tabPane.getTitleAt(i).equals(tabName) )
+			{
+				System.out.println("해당탭 제거 중");
+				tabPane.removeTabAt(i);
+				System.out.println("해당탭 제거 완료");
+			}
+		}	
 	}
 	
 	public class tabChangeListener implements ChangeListener {
@@ -768,6 +801,13 @@ public class chatClient extends JFrame {
 					{
 						System.out.println("귓속말 받음");
 						receivingManager();
+						continue;
+					}
+					if(message.equals("/exited/"))
+					{
+						System.out.println("대화방 닫기 받음");
+						exitor();
+						continue;
 					}
 
 /* 지금 상태로 작동안할테니 일단 주석처리.
