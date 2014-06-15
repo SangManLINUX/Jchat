@@ -200,7 +200,7 @@ public class chatClient extends JFrame {
 	private void initialSetMyNick() { // 처음 접속 일회용.
 		try {
 			System.out.println("나의 닉을 맞추는 중 + 기본 대화방 system 맞추기");
-			writer.write("/nick" + "\n" + info[2] + "\n" + defaultChatRoom + "\n");
+			writer.write("/initialNick" + "\n" + info[2] + "\n" + defaultChatRoom + "\n");
 			writer.flush();
 			} catch(Exception e) {e.printStackTrace(); System.out.println("no1");}
 	}
@@ -354,6 +354,43 @@ public class chatClient extends JFrame {
 			System.out.println("Client socket down");
 		}
 	}
+	
+	private void changeNick()
+	{
+		String preNick; // 이전 닉
+		String postNick; // 이후 닉
+		
+		JScrollPane sp; // 해당하는 스크롤팬 담을 곳.
+		JTextArea ta; // 해당하는 텍스트영역 담을 곳.
+		
+		try {
+			preNick = reader.readLine();
+			postNick = reader.readLine();
+			
+			// 닉 바꾼 본인일때
+			if(info[2].equals(preNick))
+			{
+				info[2] = postNick;
+				
+				if( tabSearcher(tabName) )
+				{
+					ta = tabDispenser(tabName);
+					ta.append("<system> 닉네임 변경 완료." + "\n");
+				}			
+			}
+			else if(info[2].endsWith(preNick) == false)
+			{
+				for( int i = 0; i < tabPane.getTabCount(); i++)
+				{				
+					if(tabPane.getTitleAt(i).equals(preNick) )
+					{
+						tabPane.setTitleAt(i, postNick);
+					}
+				}
+			}
+		} catch(Exception e){ e.printStackTrace(); }
+			
+	}
 
 	private void sendingManager() {
 		String input; // 입력받은거
@@ -464,12 +501,18 @@ public class chatClient extends JFrame {
 					writer.flush();
 				} catch(Exception e) { e.printStackTrace(); }				
 			}
-			/*
-			try {
-				writer.write(command + "\n" + content + "\n");
-				writer.flush();
-			} catch(Exception e) { e.printStackTrace(); }
-			*/
+
+		}
+		else if(command.equals("/nick"))
+		{
+			if(spellChecker(input, command, content))
+			{
+				try {
+					writer.write(command + "\n" + content + "\n");
+					writer.flush();
+				} catch(Exception e) { e.printStackTrace(); }				
+			}
+
 		}
 		else if(command.equals("/sendQuery"))
 		{
@@ -501,6 +544,7 @@ public class chatClient extends JFrame {
 				writer.flush();
 			} catch(Exception e) { e.printStackTrace(); }
 		}
+		
 		else
 		{
 			if( tabSearcher(tabName) )
@@ -509,6 +553,7 @@ public class chatClient extends JFrame {
 				ta.append("<system> 잘못된 입력입니다." + "\n");
 				return;
 			}
+			
 			/*
 			for( int i = 0; i < tabPane.getTabCount(); i++)
 			{				
@@ -523,10 +568,11 @@ public class chatClient extends JFrame {
 				}
 			}
 			*/
+			
 		}
 
 	}
-
+	
 	private void receivingManager()
 	{
 		String receivedTabName;
@@ -622,10 +668,6 @@ public class chatClient extends JFrame {
 			}
 
 		} catch(Exception e) { e.printStackTrace(); }
-
-		// (구식) 쿼리 구상
-		// 클라이언트의 tabName에 인덱스를 for문을 돌려서 이름이 receivedTabName과
-		// 같은 탭의 컴포넌트(아마스크롤달린 JPanel)에 receivedNick과 receivedMessage를 넣는다.
 
 	}
 
@@ -1121,6 +1163,7 @@ public class chatClient extends JFrame {
 		public void run() {
 
 			String message;
+			JTextArea ta; // 해당하는 텍스트영역 담을 곳.
 
 			try {
 				while((message = reader.readLine()) != null) {
@@ -1133,8 +1176,29 @@ public class chatClient extends JFrame {
 					if(message.equals("/denied/"))
 					{
 						System.out.println("사용중인 닉네임입니다.");
-//						incoming.append("<SYSTEM> 사용중인 닉네임입니다.");
+						if( tabSearcher(defaultChatRoom) )
+						{
+							ta = tabDispenser(defaultChatRoom);
+							ta.append("<system> 사용중인 닉네임입니다." + "\n");
+							break; // 브레이크나 리턴이나...
+						}	
 						break;
+					}
+					if(message.equals("/changeNickdenied/"))
+					{
+						System.out.println("변경하려는 닉네임은 이미 사용중입니다.");
+						if( tabSearcher(tabName) )
+						{
+							ta = tabDispenser(tabName);
+							ta.append("<system> 변경하려는 닉네임은 이미 사용중입니다." + "\n");
+						}
+						continue;
+					}
+					if(message.equals("/nickChanged/"))
+					{
+						System.out.println("어느 닉네임 변경됨.");
+						changeNick();
+						continue;
 					}
 					if(message.equals("/joined/"))
 					{

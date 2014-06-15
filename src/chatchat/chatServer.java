@@ -3,12 +3,13 @@ package chatchat;
 import java.io.*;
 import java.net.*;
 import java.util.*;
+
 import javax.swing.*;
 
-public class chatServer {
+public class chatServer extends JFrame {
 
 	ArrayList<Object> clientOutputStreams;
-	ArrayList<String> nickList; // 이제 필요없을듯 허다.
+//	ArrayList<String> nickList; // 이제 필요없을듯 허다.
 	ArrayList<String[]> abd; // 이게 뭐지?
 //	HashMap<String, Object> newClientOutputStreams; // 대화방명, 클라이언트 writer
 	HashMap<String, Object> newNickList; // 닉네임, 닉네임이 들어간 대화방 ArrayList
@@ -16,11 +17,11 @@ public class chatServer {
 	chatServer() {
 
 		clientOutputStreams = new ArrayList<Object>();
-		nickList = new ArrayList<String>();	// 안 쓰인다.
+//		nickList = new ArrayList<String>();	// 안 쓰인다.
 		newNickList = new HashMap<String, Object>();	
 
-		nickList.add("Test1"); // 안 쓰인다.
-		nickList.add("Test2"); // 안 쓰인다.
+//		nickList.add("Test1"); // 안 쓰인다.
+//		nickList.add("Test2"); // 안 쓰인다.
 
 		try {
 			ServerSocket serverSock = new ServerSocket(5000);
@@ -102,7 +103,7 @@ public class chatServer {
 
 			try {
 				while((message = reader.readLine()) != null) {
-					if(message.equals("/nick"))
+					if(message.equals("/initialNick"))
 					{
 						setNick();
 						continue;
@@ -110,6 +111,11 @@ public class chatServer {
 					if(message.equals("/join"))
 					{
 						setChatroom();
+						continue;
+					}
+					if(message.equals("/nick"))
+					{
+						changeNick();
 						continue;
 					}
 					if(message.equals("/say"))
@@ -146,7 +152,7 @@ public class chatServer {
 					{
 						sock.close();
 						System.out.println("Client down");
-						nickList.remove(nickBank); // 안 쓰인다.
+//						nickList.remove(nickBank); // 안 쓰인다.
 						nickRefresh("2");
 						continue;
 					}
@@ -156,7 +162,7 @@ public class chatServer {
 				try {
 					sock.close();
 					System.out.println("Client down");
-					nickList.remove(nickBank); // 안 쓰인다.
+//					nickList.remove(nickBank); // 안 쓰인다.
 					newNickList.remove(nickBank); // 접속종료된 닉네임의 HaspMap 제거.
 					nickRefresh("2");
 				} catch (Exception e1) {
@@ -165,6 +171,23 @@ public class chatServer {
 				}
 		}
 
+		public void nickCheck(String postNick) {
+			Collection<String> coll = newNickList.keySet();
+			Iterator<String> it = coll.iterator();
+			
+			while(it.hasNext()) {
+				if(it.next().compareTo(postNick) == 0) { // 작동 확인 됨.
+					System.out.println("닉네임이 이미 존재한다.");
+					try {
+						writer.write("/changeNickDenied/" + "\n");
+						writer.flush();
+						sock.close();
+
+					} catch(Exception e) {e.printStackTrace();}
+				}
+			}
+		}
+		
 		public void nickCheck() {
 			Collection<String> coll = newNickList.keySet();
 			Iterator<String> it = coll.iterator();
@@ -180,21 +203,6 @@ public class chatServer {
 					} catch(Exception e) {e.printStackTrace();}
 				}
 			}
-
-/* 이게 뭐더라? 닉네임 거절말고 뒤로 숫자를 부여하는 함수던가.
-			int count = 1;
-			String nickName = nickBank;
-			Iterator<String> it = nickList.iterator();
-			while(it.hasNext()) {
-				if(it.next().compareTo(nickBank) == 0) { // 작동 확인 됨.
-					System.out.println("닉네임이 같은게 있다.");
-					nickBank = nickName + "(" + count + ")";
-					System.out.println("닉네임이" +nickBank + "으로");
-					count++;
-				}
-					
-			}
-*/
 		}
 
 		public String nickRefresh(Object o) {
@@ -316,8 +324,10 @@ public class chatServer {
 				newNickList.put(nickBank, chatRooms);
 				
 				// Keys만 따로 정렬하는 용도.
+				// 지금 실제로 쓰이지는 않는다...
 				List<String> SortedKeys = new ArrayList<String>(newNickList.keySet());
 				Collections.sort(SortedKeys);
+				// 안쓰임.
 				
 				writer.write("/joined/" + "\n" + defaultChatRoom + "\n");
 				writer.flush();
@@ -325,6 +335,36 @@ public class chatServer {
 				nickRefresh("2");
 			} catch (Exception e) {e.printStackTrace(); }
 
+		}
+		
+		public void changeNick() {
+			String preNick;
+			String postNick;
+			
+			BufferedWriter bw;
+			
+			try {
+				preNick = nickBank;
+				postNick = reader.readLine();
+				
+				nickCheck(postNick);
+				
+				// 이전닉의 arraylist로 된 대화방(value)을 새로운닉의 value로 넣는다.
+				// 그 후 이전 닉을 제거.
+				newNickList.put(postNick, newNickList.get(preNick));
+				newNickList.remove(preNick);
+				
+				Iterator<Object> it = clientOutputStreams.iterator();
+				while(it.hasNext())
+				{
+					bw = (BufferedWriter)it.next();
+					bw.write("/nickChanged/" + "\n" + preNick + "\n" + postNick + "\n");
+					bw.flush();
+				}
+				
+				nickRefresh("2");
+				
+			} catch(Exception e) {e.printStackTrace();}
 		}
 				
 		public void setChatroom() { // 초기 후의 채팅방 생성 함수
