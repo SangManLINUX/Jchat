@@ -18,37 +18,49 @@ public class chatServer extends JFrame {
 	ServerSocket serverSock;
 
 	ArrayList<Object> clientOutputStreams;
-//	ArrayList<String> nickList; // 이제 필요없을듯 허다.
+//	ArrayList<String> nickList; // 이젠 필요가 없어졌다.
 	ArrayList<String[]> abd; // 이게 뭐지?
 //	HashMap<String, Object> newClientOutputStreams; // 대화방명, 클라이언트 writer
 	HashMap<String, Object> newNickList; // 닉네임, 닉네임이 들어간 대화방 ArrayList
 	
+	InetAddress myIP;
 	String portNumber;
 	
 	JFrame serverFrame;
-	JLabel portLabel;
+	JPanel sPanel;
+	JLabel ipLabel, ipShow, portLabel;
 	JTextField portField;
 	JButton portButton;
 
-	chatServer() {
+	chatServer() throws UnknownHostException, NullPointerException {
 		serverFrame = new JFrame("서버 설정");
 		serverFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		JPanel sPanel = new JPanel();
+		sPanel = new JPanel();
 		serverFrame.add(sPanel);
 		sPanel.setLayout(null);
 		
+		myIP = InetAddress.getLocalHost();
+		
+		ipLabel = new JLabel("서버 ＩＰ");
+		ipLabel.setBounds(10, 10, 60, 20);
+		sPanel.add(ipLabel);
+		
+		ipShow = new JLabel(myIP.getHostAddress());
+		ipShow.setBounds(70, 10, 160, 20);
+		sPanel.add(ipShow);
+		
 		portLabel = new JLabel("포트 번호");
-		portLabel.setBounds(10, 20, 60, 20);
+		portLabel.setBounds(10, 30, 60, 20);
 		sPanel.add(portLabel);
 		
 		portField = new JTextField("5000");
-		portField.setBounds(70, 20, 80, 20);
+		portField.setBounds(70, 30, 80, 20);
 		portField.addKeyListener(new PortKeyListener());
 		portField.addMouseListener(new PortMouseListener());
 		sPanel.add(portField);
 		
 		portButton = new JButton("활성화");
-		portButton.setBounds(160, 20, 80, 20);
+		portButton.setBounds(160, 30, 80, 20);
 		portButton.addActionListener(new PortButtonListener());
 		sPanel.add(portButton);
 
@@ -562,7 +574,7 @@ public class chatServer extends JFrame {
 
 	}
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws UnknownHostException, NullPointerException {
 		new chatServer();
 	}
 }
