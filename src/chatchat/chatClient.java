@@ -23,6 +23,13 @@ public class chatClient extends JFrame {
 	JScrollPane qScroller; // 스크롤팬
 	JTabbedPane tabPane; // 채팅창 탭팬
 	
+	String help = "도움:             /help" + "\n"
+				+ "닉네임 변경:      /nick <닉네임>" + "\n"
+				+ "채널 입장:        /join <#채널명>" + "\n"
+				+ "귓속말:           /query <닉네임>" + "\n"
+				+ "채널 퇴장:        /exit" + "\n"
+				+ "서버 연결해제:    /disconnect" + "\n";
+	
 	// 가끔씩 tabName에 system이 들어가지 않은 상태로 sendManager에서 조건을 걸기에
 	// 오류가 뜬다...
 	String tabName;
@@ -495,7 +502,15 @@ public class chatClient extends JFrame {
 				
 			}
 			*/
-		
+		if(command.equals("/help"))
+		{
+			if( tabSearcher(tabName) )
+			{
+				ta = tabDispenser(tabName);
+				ta.append(help);
+				return;
+			}
+		}
 		if(command.equals("/join"))
 		{
 			if(spellChecker(input, command, content))
