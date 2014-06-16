@@ -1238,7 +1238,7 @@ public class chatClient extends JFrame {
 						}	
 						break;
 					}
-					if(message.equals("/changeNickdenied/"))
+					if(message.equals("/changeNickDenied/"))
 					{
 						System.out.println("변경하려는 닉네임은 이미 사용중입니다.");
 						if( tabSearcher(tabName) )

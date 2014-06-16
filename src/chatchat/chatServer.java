@@ -64,11 +64,11 @@ public class chatServer extends JFrame {
 		sPanel.add(portField);
 		
 		portButton = new JButton("활성화");
-		portButton.setBounds(160, 30, 80, 20);
+		portButton.setBounds(160, 30, 100, 20);
 		portButton.addActionListener(new PortButtonListener());
 		sPanel.add(portButton);
 
-		serverFrame.setSize(260, 90);
+		serverFrame.setSize(280, 90);
 		serverFrame.setResizable(false);
 		serverFrame.setVisible(true);
 		serverFrame.setLocation((Toolkit.getDefaultToolkit().getScreenSize().width)/2-100, (Toolkit.getDefaultToolkit().getScreenSize().height)/2-100);
@@ -318,7 +318,7 @@ public class chatServer extends JFrame {
 				}	
 		}
 
-		public void nickCheck(String postNick) {
+		public boolean nickCheck(String postNick) {
 			Collection<String> coll = newNickList.keySet();
 			Iterator<String> it = coll.iterator();
 
@@ -328,11 +328,12 @@ public class chatServer extends JFrame {
 					try {
 						writer.write("/changeNickDenied/" + "\n");
 						writer.flush();
-						sock.close();
+						return true;
 
 					} catch(Exception e) {e.printStackTrace();}
 				}
 			}
+			return false;
 		}
 
 		public void nickCheck() {
@@ -494,25 +495,29 @@ public class chatServer extends JFrame {
 				preNick = nickBank;
 				postNick = reader.readLine();
 
-				nickCheck(postNick);
-
-				// 이전닉의 arraylist로 된 대화방(value)을 새로운닉의 value로 넣는다.
-				// 그 후 이전 닉을 제거.
-				newNickList.put(postNick, newNickList.get(preNick));
-				newNickList.remove(preNick);
-
-				// 새로 받은 닉네임을 넣는다.
-				nickBank = postNick;
-				
-				Iterator<Object> it = clientOutputStreams.iterator();
-				while(it.hasNext())
+				if( nickCheck(postNick) == false )
 				{
-					bw = (BufferedWriter)it.next();
-					bw.write("/nickChanged/" + "\n" + preNick + "\n" + postNick + "\n");
-					bw.flush();
+					// 이전닉의 arraylist로 된 대화방(value)을 새로운닉의 value로 넣는다.
+					// 그 후 이전 닉을 제거.
+					newNickList.put(postNick, newNickList.get(preNick));
+					newNickList.remove(preNick);
+
+					// 새로 받은 닉네임을 넣는다.
+					nickBank = postNick;
+					
+					Iterator<Object> it = clientOutputStreams.iterator();
+					while(it.hasNext())
+					{
+						bw = (BufferedWriter)it.next();
+						bw.write("/nickChanged/" + "\n" + preNick + "\n" + postNick + "\n");
+						bw.flush();
+					}
+
+					nickRefresh("2");
+					
 				}
 
-				nickRefresh("2");
+
 
 			} catch(Exception e) {e.printStackTrace();}
 		}
