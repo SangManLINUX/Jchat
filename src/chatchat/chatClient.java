@@ -22,7 +22,11 @@ public class chatClient extends JFrame {
 	JPanel mainPanel; // 채팅창 패널
 	JScrollPane qScroller; // 스크롤팬
 	JTabbedPane tabPane; // 채팅창 탭팬
-	String tabName; // 탭 이름. 이벤트, 전송용.
+	
+	// 가끔씩 tabName에 system이 들어가지 않은 상태로 sendManager에서 조건을 걸기에
+	// 오류가 뜬다...
+	String tabName;
+//	String tabName = "system"; // 탭 이름. 이벤트, 전송용.
 
 	JMenuBar mb; // 메뉴바
 	JMenu fileMenu; // 파일 메뉴
@@ -43,7 +47,8 @@ public class chatClient extends JFrame {
 	JTextField[] loginTextField;
 	JButton[] loginButton;
 
-	// 닉리스트 전용으로 쓸까, 따로 컬렉터를 쓸까 고민중. 사용해야겠다.
+	// 닉리스트 전용으로 쓸까, 따로 컬렉터를 쓸까 고민중.
+	// 닉리스트 보여줄 때 사용하기로 함.
 	ArrayList<String> nickList = new ArrayList<String>(); 
 
 	// 닉네임, 닉네임이 들어간 대화방 ArrayList
@@ -106,6 +111,8 @@ public class chatClient extends JFrame {
 		outgoing = new JTextField(20);
 		outgoing.setFocusTraversalKeysEnabled(false);
 		outgoing.addKeyListener(new MyKeyListener());
+		
+		lista.setPreferredSize(new Dimension(120, 100));
 
 		mainPanel.add(tabPane, BorderLayout.CENTER);
 		mainPanel.add(outgoing, BorderLayout.SOUTH);
@@ -242,10 +249,11 @@ public class chatClient extends JFrame {
 		String chatRoom;
 		try {
 			chatRoom = reader.readLine();
+			tabName = chatRoom; // 대화방의 이름을 넣는다.
 
 			newIncoming = new JTextArea();
 
-			newIncoming.setLineWrap(true);;
+			newIncoming.setLineWrap(true);
 			newIncoming.setWrapStyleWord(true);
 			newIncoming.setEditable(false);
 			qScroller = new JScrollPane(newIncoming);
@@ -261,6 +269,9 @@ public class chatClient extends JFrame {
 				if(tabPane.getTitleAt(i).equals(chatRoom) )
 				{
 					tabPane.setSelectedIndex(i);
+					
+					// 탭 새로 생성시 outgoing에 무슨 값이 들어있나...
+					//outgoing.setText("");
 					break;
 				}
 			}	
@@ -286,6 +297,8 @@ public class chatClient extends JFrame {
 			readerThread.start();
 
 			initialSetMyNick();
+			
+			chatFrame.setTitle("클라이언트" + "<" + info[2] + ">");
 
 			System.out.println("Established...");
 
@@ -376,6 +389,7 @@ public class chatClient extends JFrame {
 				{
 					ta = tabDispenser(tabName);
 					ta.append("<system> 닉네임 변경 완료." + "\n");
+					chatFrame.setTitle("클라이언트" + "<" + info[2] + ">");
 				}			
 			}
 			else if(info[2].endsWith(preNick) == false)
@@ -388,6 +402,7 @@ public class chatClient extends JFrame {
 					}
 				}
 			}
+			
 		} catch(Exception e){ e.printStackTrace(); }
 			
 	}
@@ -399,7 +414,7 @@ public class chatClient extends JFrame {
 		input = outgoing.getText();
 		JTextArea ta; // 해당하는 텍스트영역 담을 곳.
 
-		if(input.startsWith("/") == false && tabName.equals(defaultChatRoom))
+		if(!(input.startsWith("/")) && tabName.equals(defaultChatRoom))
 		{
 			if( tabSearcher(defaultChatRoom) )
 			{
@@ -645,7 +660,10 @@ public class chatClient extends JFrame {
 						tabExist = true; // 탭이 존재한다.
 					}
 				}
-				if(receivedMessage.equals(info[2])) {	// 호출기능. 메시지가 완전히 '닉네임만'을 보내야 반응하도록 변경.(이전엔 메시지에 포함되기만 해도 호출.)
+				// 호출기능. 메시지가 완전히 '닉네임만'을 보내야 반응하도록 변경.
+				// (이전엔 메시지에 포함되기만 해도 호출.)
+				// 본인이 본인닉을 언급할때는 제외.
+				if(receivedMessage.contains(info[2]) && receivedNick.equals(info[2]) == false ) {	
 					try{
 						AudioInputStream callSound = AudioSystem.getAudioInputStream(callingFile);
 						Clip callClip = AudioSystem.getClip();							
@@ -702,10 +720,13 @@ public class chatClient extends JFrame {
 			}
 		}
 
+		// ArrayList nickList 정렬
+		Collections.sort(nickList);
+		
 		// 새로 구성한 ArrayList nickList로 새로고침.
 		lista.setListData(nickList.toArray());
 		lista.repaint();
-
+		
 	}
 
 	private void refreshNick() {
@@ -846,6 +867,38 @@ public class chatClient extends JFrame {
 			}	
 		}
 		
+		
+		else if(command.equals("/nick"))
+		{
+			if(content == null || content.length() == 0)
+			{
+				if( tabSearcher(tabName) )
+				{
+					ta = tabDispenser(tabName);
+					ta.append("<system> 변경할 닉네임을 입력하세요." + "\n");
+					return false;
+				}
+			}
+			else if(content.startsWith("#"))
+			{
+				if( tabSearcher(tabName) )
+				{
+					ta = tabDispenser(tabName);
+					ta.append("<system> 닉네임은 #으로 시작할 수 없습니다." + "\n");
+					return false;
+				}
+			}
+			else if(content.contains(" "))
+			{
+				if( tabSearcher(tabName) )
+				{
+					ta = tabDispenser(tabName);
+					ta.append("<system> 공백은 불가능합니다." + "\n");
+					return false;
+				}
+			}	
+		}
+
 		return true;
 		
 	}
@@ -933,6 +986,7 @@ public class chatClient extends JFrame {
 				else if(clientOnOff == false)
 				{
 					loginButton[0].setEnabled(true);
+					loginButton[1].setText("닫기");
 				}
 				
 			}
@@ -1224,24 +1278,32 @@ public class chatClient extends JFrame {
 						exitor();
 						continue;
 					}
-
-/*					if((message.substring(message.indexOf(": "))).contains(info[2])){		// 호출기능.
-						try{
-							AudioInputStream callSound = AudioSystem.getAudioInputStream(callingFile);
-							Clip callClip = AudioSystem.getClip();							
-							callClip.open(callSound);
-							callClip.start();
-							System.out.println("Calling!!");
-						}catch(Exception e){
-							e.printStackTrace();
-							System.out.println("Sound Error!!");
+					if(message.equals("/serverDown/"))
+					{
+						System.out.println("서버 내려감.");
+						if( tabSearcher(defaultChatRoom) )
+						{
+							ta = tabDispenser(defaultChatRoom);
+							ta.append("<system> 서버가 종료되었습니다." + "\n");
 						}
+						if( tabSearcher(tabName) && tabPane.getComponentCount() != 1)
+						{
+							ta = tabDispenser(tabName);
+							ta.append("<system> 서버가 종료되었습니다." + "\n");
+						}
+						sock.close();
+						outgoing.setEditable(false);
+						menuItem[0].setEnabled(true); // 연결 버튼 비활성화
+						menuItem[1].setEnabled(false); //  연결해제 버튼 활성화
+						clientOnOff = false;
+						
 					}
-*/
+
 				}
 			}
 			catch (IOException e) {
-				e.printStackTrace(); System.out.println("no6"); 
+				e.printStackTrace(); 
+				System.out.println("클라이언트 소켓 닫음."); 
 			}
 		}
 	}

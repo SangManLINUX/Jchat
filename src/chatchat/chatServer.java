@@ -6,18 +6,23 @@ import java.util.*;
 
 import javax.swing.*;
 
+import java.awt.Toolkit;
 //import java.awt.*;
 import java.awt.event.*;
 
+import chatchat.chatClient.IncomingReader;
 import chatchat.chatClient.LoginButtonListener;
 import chatchat.chatClient.LoginKeyListener;
 import chatchat.chatClient.LoginMouseListener;
 
 public class chatServer extends JFrame {
 	
+	Thread serverRunnerThread;
 	ServerSocket serverSock;
+	boolean serverOnOff = false; // 참이면 켜짐, 거짓이면 꺼짐.
 
-	ArrayList<Object> clientOutputStreams;
+	ArrayList<Object> clientOutputStreams; // 클라이언트 writer용.
+	ArrayList<Object> clientSockets; // 클라이언트 소켓용.
 //	ArrayList<String> nickList; // 이젠 필요가 없어졌다.
 	ArrayList<String[]> abd; // 이게 뭐지?
 //	HashMap<String, Object> newClientOutputStreams; // 대화방명, 클라이언트 writer
@@ -55,7 +60,6 @@ public class chatServer extends JFrame {
 		
 		portField = new JTextField("5000");
 		portField.setBounds(70, 30, 80, 20);
-		portField.addKeyListener(new PortKeyListener());
 		portField.addMouseListener(new PortMouseListener());
 		sPanel.add(portField);
 		
@@ -67,6 +71,7 @@ public class chatServer extends JFrame {
 		serverFrame.setSize(260, 90);
 		serverFrame.setResizable(false);
 		serverFrame.setVisible(true);
+		serverFrame.setLocation((Toolkit.getDefaultToolkit().getScreenSize().width)/2-100, (Toolkit.getDefaultToolkit().getScreenSize().height)/2-100);
 	}
 
 	// newNickList, nickBank, tabName을 이용하여 tabName에 해당하는 곳에만 보낸다.
@@ -90,101 +95,122 @@ public class chatServer extends JFrame {
 		}
 	}
 	
-	public class PortKeyListener extends KeyAdapter {
-		boolean toggle = true;
-		public void keyPressed(KeyEvent e) {
-			if (e.getKeyCode() == 10) {
-				try
-				{
-					for(int i = 0; i < 3; i++) {
-						clientOutputStreams = new ArrayList<Object>();		// ENTER 키를 통한 서버 활성화. 단, 스레드때문인지 프레임 조작 불가.
-						newNickList = new HashMap<String, Object>();
-						try {
-							serverSock = new ServerSocket(Integer.valueOf(portField.getText()));
-
-							while(true) {
-								Socket clientSocket = serverSock.accept();
-
-								OutputStreamWriter osw = new OutputStreamWriter(clientSocket.getOutputStream());
-								BufferedWriter writer = new BufferedWriter(osw);				
-
-								clientOutputStreams.add(writer);
-
-								Thread t = new Thread(new ClientHandler(clientSocket));
-								t.start();
-								System.out.println("Connection...");
-							}
-						} catch(Exception ex) {ex.printStackTrace(); System.out.println("no1");}
-					}
-				} catch (Exception ex) {ex.printStackTrace(); System.out.println("Porting Error!!");}
-			}
-			if(toggle)
-			{
-				portField.setText("");
-				toggle = false;
-			}
+	public void serverRun() {
+		portNumber = portField.getText();
+		
+		serverRunnerThread = new Thread(new ServerRunner());
+		serverRunnerThread.start();
+		if(serverRunnerThread.isAlive())
+		{
+			serverOnOff = true;
+			portField.setEditable(false);
+			portButton.setText("비활성화");	
 		}
+	}
+	
+	public void serverDown() {
+		try{
+			serverSock.close();
+			serverRunnerThread.interrupt();
+			Iterator<Object> itForSocket = clientSockets.iterator();
+			
+			while(itForSocket.hasNext())
+			{
+				Socket s = (Socket)itForSocket.next();
+				try{
+					OutputStreamWriter osw = new OutputStreamWriter(s.getOutputStream());
+					BufferedWriter writer = new BufferedWriter(osw);
+					writer.write("/serverDown/" + "\n");
+					writer.flush();
+					s.close();
+					} 
+					catch(Exception e) 
+					{
+						System.out.println("클라이언트 소켓 닫힘");
+						itForSocket.remove();
+						continue;
+					} 					
+			}
+			
+			System.out.println("서버 정상 종료.");
+			Thread.sleep(100);
+		} catch(Exception e) { e.printStackTrace(); }
+		
+		
+		if(serverRunnerThread.isAlive() == false)
+		{
+			serverOnOff = false;
+			portField.setEditable(true);
+			portButton.setText("활성화");
+		}
+	}
+	
+	public class ServerRunner implements Runnable
+	{
+		public ServerRunner()
+		{
+			
+		}
+
+		public void run() {
+			
+			clientOutputStreams = new ArrayList<Object>();
+			clientSockets = new ArrayList<Object>();
+			newNickList = new HashMap<String, Object>();
+			try {
+				serverSock = new ServerSocket(Integer.valueOf(portNumber));
+
+				while(true)
+				{
+					Socket clientSocket = serverSock.accept();
+
+					OutputStreamWriter osw = new OutputStreamWriter(clientSocket.getOutputStream());
+					BufferedWriter writer = new BufferedWriter(osw);				
+					
+					clientOutputStreams.add(writer);
+					clientSockets.add(clientSocket);
+
+					Thread t = new Thread(new ClientHandler(clientSocket));
+					t.start();
+					System.out.println("Connection...");
+				}
+			}
+			catch(Exception ex) 
+			{
+//				ex.printStackTrace(); 
+				System.out.println("서버 소켓 닫힘.");
+			}
+			
+		}
+		
 	}
 	
 	public class PortMouseListener extends MouseAdapter {
 		boolean toggle = true;
+		
 		public void mousePressed(MouseEvent e)  {
-			if(toggle)
+			
+			if(toggle == true && serverOnOff == false)
 			{
 				portField.setText("");
 				toggle = false;
 			}
+			
 		}
 	}
 	
 	public class PortButtonListener implements ActionListener {
 		public void actionPerformed(ActionEvent e) {
-			JButton button = (JButton)e.getSource();
-			
-			if(button.getText().equals("활성화"))	{
-				portNumber = portField.getText();
-//				portField.setEditable(false);
-//				portButton.setText("비활성화");
 
-				clientOutputStreams = new ArrayList<Object>();		// '활성화'버튼을 눌러 서버를 활성화. 단, 스레드때문인지 종료는 제대로 되지 않음.
-				newNickList = new HashMap<String, Object>();
-				try {
-					serverSock = new ServerSocket(Integer.valueOf(portNumber));
-
-					while(true) {
-						Socket clientSocket = serverSock.accept();
-
-						OutputStreamWriter osw = new OutputStreamWriter(clientSocket.getOutputStream());
-						BufferedWriter writer = new BufferedWriter(osw);				
-
-						clientOutputStreams.add(writer);
-
-						Thread t = new Thread(new ClientHandler(clientSocket));
-						t.start();
-						System.out.println("Connection...");
-					}
-				} catch(Exception ex) {ex.printStackTrace(); System.out.println("no1");}
-				
-			}
-/*			else if(button.getText().equals("비활성화")) {
-				portNumber = null;
-				portField.setEditable(true);
-				portButton.setText("활성화");
-			}*/
-		}
-	}
-
-	public class LoginMouseListener extends MouseAdapter {
-		boolean toggle = true;
-
-		public void mousePressed(MouseEvent e)  {
-
-			if(toggle)
+			if(serverOnOff == false)
 			{
-				JTextField tf = (JTextField)e.getSource();
-				tf.setText("");
-				toggle = false;
+				serverRun();				
 			}
+			else if(serverOnOff == true)
+			{
+				serverDown();
+			}
+			
 		}
 	}
 
@@ -219,9 +245,12 @@ public class chatServer extends JFrame {
 			String message; // 받은메시지
 			String tabName; // 대화방명
 			String content; // 대화내용
-
+			
 			try {
-				while((message = reader.readLine()) != null) {
+				// 클라이언트 소켓을 닫을 방법을 생각해봐야 한다.
+				//while((message = reader.readLine()) != null && serverOnOff == true)
+				while((message = reader.readLine()) != null) 
+				{
 					if(message.equals("/initialNick"))
 					{
 						setNick();
@@ -281,13 +310,12 @@ public class chatServer extends JFrame {
 				try {
 					sock.close();
 					System.out.println("Client down");
-//					nickList.remove(nickBank); // 안 쓰인다.
 					newNickList.remove(nickBank); // 접속종료된 닉네임의 HaspMap 제거.
 					nickRefresh("2");
 				} catch (Exception e1) {
 					System.out.println("Server down");
 					}
-				}
+				}	
 		}
 
 		public void nickCheck(String postNick) {
@@ -473,6 +501,9 @@ public class chatServer extends JFrame {
 				newNickList.put(postNick, newNickList.get(preNick));
 				newNickList.remove(preNick);
 
+				// 새로 받은 닉네임을 넣는다.
+				nickBank = postNick;
+				
 				Iterator<Object> it = clientOutputStreams.iterator();
 				while(it.hasNext())
 				{
@@ -563,10 +594,7 @@ public class chatServer extends JFrame {
 
 					}
 
-
 				} catch(Exception e) { e.printStackTrace(); }
-
-
 
 				}
 			System.out.println("대화방 나가기 정리 종료");		
