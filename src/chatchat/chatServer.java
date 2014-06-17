@@ -23,9 +23,6 @@ public class chatServer extends JFrame {
 
 	ArrayList<Object> clientOutputStreams; // 클라이언트 writer용.
 	ArrayList<Object> clientSockets; // 클라이언트 소켓용.
-//	ArrayList<String> nickList; // 이젠 필요가 없어졌다.
-	ArrayList<String[]> abd; // 이게 뭐지?
-//	HashMap<String, Object> newClientOutputStreams; // 대화방명, 클라이언트 writer
 	HashMap<String, Object> newNickList; // 닉네임, 닉네임이 들어간 대화방 ArrayList
 	
 	InetAddress myIP;
@@ -135,8 +132,7 @@ public class chatServer extends JFrame {
 			System.out.println("서버 정상 종료.");
 			Thread.sleep(100);
 		} catch(Exception e) { e.printStackTrace(); }
-		
-		
+				
 		if(serverRunnerThread.isAlive() == false)
 		{
 			serverOnOff = false;
@@ -214,17 +210,16 @@ public class chatServer extends JFrame {
 		}
 	}
 
-	// nickRefresh 함수를 public class ClientHandler로 이사.
-
 	public class ClientHandler implements Runnable {
+		Socket sock;
 		InputStreamReader isr;
 		BufferedReader reader;
 		OutputStreamWriter osr;
 		BufferedWriter writer;
-		Socket sock;
-		String firstNick; // 안쓰인다...?
+		
 		String nickBank; // 클라이언트소켓 닉네임 기억용.
 		String defaultChatRoom; // 기본적으로 접속되는 system 방.
+		
 		ArrayList<String> chatRooms = new ArrayList<String>();
 		List<String> SortedKeys; // HashMap의 keys만 모아서 정렬시키는 거.
 
@@ -247,8 +242,6 @@ public class chatServer extends JFrame {
 			String content; // 대화내용
 			
 			try {
-				// 클라이언트 소켓을 닫을 방법을 생각해봐야 한다.
-				//while((message = reader.readLine()) != null && serverOnOff == true)
 				while((message = reader.readLine()) != null) 
 				{
 					if(message.equals("/initialNick"))
@@ -300,7 +293,6 @@ public class chatServer extends JFrame {
 					{
 						sock.close();
 						System.out.println("Client down");
-//						nickList.remove(nickBank); // 안 쓰인다.
 						nickRefresh("2");
 						continue;
 					}
@@ -378,25 +370,23 @@ public class chatServer extends JFrame {
 					String key;
 					String value;
 
-					// Key값을 보내고,
+					// Key값을 보내고, (괄호 안씌우니까 개행까지 들어간다.)
 					writer.write( "/key/" + "\n" + (key = itForKey.next() ) + "\n");
-					// 괄호 안씌우니까 개행까지 들어간다.
 					writer.flush();
 					System.out.println("key값인 " + key + " 을 전송과");
 
 					// Key의 Value 들을 보낸다.
 					Iterator<String> itForValue;
 					// 현재 초기접속시 key 값이 null 이기에 문제 발생.(해결)
-
-//					System.out.println((newNickList.get(key).getClass())); // value 클래스 확인용
-					// String을 ArrayList로 형변환 할수 없다고?? (해결)
+					
+					// String을 ArrayList로 형변환 할수 없을까 (해결)
 					ArrayList<String> arrayForValue = (ArrayList)newNickList.get(key);
 					itForValue = arrayForValue.iterator();
 
 					while(itForValue.hasNext())
 					{
-						writer.write( "/value/" + "\n" + (value = itForValue.next()) + "\n");
 						// 괄호 안씌우니까 개행까지 들어간다.
+						writer.write( "/value/" + "\n" + (value = itForValue.next()) + "\n");
 						writer.flush();
 						System.out.println("value인 " + value + " 을 전송");
 
@@ -440,9 +430,7 @@ public class chatServer extends JFrame {
 						{
 							it.remove();
 							deadCheck = null;
-							// 스트림용 말고도 닉네임 리스트에서도 지울 필요가 있는데,
-							// 여기서는 불가능하고 함수를 만들어야한다.
-							// 클라이언트에서(해결완료?) 
+							// 스트림용 말고도 닉네임 리스트에서도 지울 필요가 있다.(해결)
 						}			
 
 					} catch(Exception e) {e.printStackTrace(); System.out.println("가나다");}
@@ -468,7 +456,6 @@ public class chatServer extends JFrame {
 				chatRooms.add(defaultChatRoom);
 
 				// 아, 내가 String을 넣었었구나...(해결)
-//				newNickList.put(nickBank, defaultChatRoom);
 				newNickList.put(nickBank, chatRooms);
 
 				// Keys만 따로 정렬하는 용도.
@@ -527,13 +514,22 @@ public class chatServer extends JFrame {
 			try {
 				chatRoom = reader.readLine();
 				// ArrayList charRooms에 chatRoom과 중복된 값이 있다면, 거절해야한다. 
-				chatRooms.add(chatRoom);
-				newNickList.put(nickBank, chatRooms);
+				
+				if(chatRooms.contains(chatRoom))
+				{
+					writer.write("/alreadyJoined/" + "\n" + chatRoom + "\n");
+					writer.flush();
+				}
+				else
+				{
+					chatRooms.add(chatRoom);
+					newNickList.put(nickBank, chatRooms);
 
-				writer.write("/joined/" + "\n" + chatRoom + "\n");
-				writer.flush();
-
-				nickRefresh("2");
+					writer.write("/joined/" + "\n" + chatRoom + "\n");
+					writer.flush();
+					
+					nickRefresh("2");	
+				}
 
 			} catch(Exception e) {e.printStackTrace(); }
 		}
@@ -553,6 +549,14 @@ public class chatServer extends JFrame {
 			try {
 				// nickBank는 귓속말 보내는 곳, tabName 귓속말 대상, content 내용.
 				// 보내는 닉이 받는 닉에게 메시지를 보낸다.
+				
+				if(newNickList.containsKey(tabName) == false)
+				{
+					writer.write("/noNick/" + "\n");
+					writer.flush();
+					return;
+				}
+				
 				Iterator<Object> it = clientOutputStreams.iterator();
 				while(it.hasNext())
 				{
@@ -561,7 +565,7 @@ public class chatServer extends JFrame {
 					bw.flush();
 					// 귓속말방 만들고 메시지 보내고 안보내는거 보니 이게 문제 같다.
 					// it에서 받는 bw랑 여기 스레드의 전역 writer랑 다르다.
-//					writer.flush();
+					// writer.flush();
 				}
 			} catch(Exception e) {e.printStackTrace(); }
 
@@ -582,7 +586,7 @@ public class chatServer extends JFrame {
 					{
 						System.out.println("key값인 " + key + " 의");
 
-//						System.out.println((newNickList.get(key).getClass())); // value 클래스 확인용
+						// System.out.println((newNickList.get(key).getClass())); // value 클래스 확인용
 						// String을 ArrayList로 형변환 할수 없다고?? (해결)
 						ArrayList<String> arrayForValue = (ArrayList)newNickList.get(key);
 						if( arrayForValue.contains(tabName) )

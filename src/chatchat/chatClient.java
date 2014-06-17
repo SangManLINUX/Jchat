@@ -31,9 +31,8 @@ public class chatClient extends JFrame {
 				+ "서버 연결해제:    /disconnect" + "\n";
 	
 	// 가끔씩 tabName에 system이 들어가지 않은 상태로 sendManager에서 조건을 걸기에
-	// 오류가 뜬다...
+	// 오류가 뜬다...(해결)
 	String tabName;
-//	String tabName = "system"; // 탭 이름. 이벤트, 전송용.
 
 	JMenuBar mb; // 메뉴바
 	JMenu fileMenu; // 파일 메뉴
@@ -41,12 +40,14 @@ public class chatClient extends JFrame {
 	JFileChooser setCalling = new JFileChooser();	// '열기'창을 위한 JFileChooser.
 	File callingFile = new File("Calling.wav");		// 초기 호출음 기본값. 동 폴더 내에 있는 Calling.wav파일.
 
+// 폐기됨
 //	ImageIcon bgImage;	// 이미지 파일
 //	String bgiRoute;	// 이미지 파일의 경로
 
 //	JTextArea incoming; // 구식의 텍스트영역
 						// 나중에 incoming에 해당하는것을 다루려면 tabPane자체를 다루던가
 						// 탭이름에 해당하면 컴포넌트를 리턴하는 함수를 만들어야 할지도...
+
 	JTextArea newIncoming;
 	JTextField outgoing;
 
@@ -94,8 +95,9 @@ public class chatClient extends JFrame {
 		mainPanel.setLayout(new BorderLayout());
 
 		createMenu();
+		
+// 폐기됨		
 //		bgImage = new ImageIcon("");						// textArea에 채워넣을 이미지의 경로를 지정하는 부분.
-
 //		incoming = new JTextArea(15, 50);
 /*		incoming = new JTextArea() {						// 이미지를 불러들여 textArea에 채워넣는 부분. 여러 문제로 보류.
 		      Image image = bgImage.getImage();
@@ -137,6 +139,7 @@ public class chatClient extends JFrame {
 		JPanel oPanel = new JPanel();
 		settingFrame.add(oPanel);
 		oPanel.setLayout(null);
+		// 이걸 그냥 쓰지 닫으면 프로그램이 꺼진다.
 //		settingFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		settingFrame.addWindowListener(new windowListener());
 
@@ -276,9 +279,6 @@ public class chatClient extends JFrame {
 				if(tabPane.getTitleAt(i).equals(chatRoom) )
 				{
 					tabPane.setSelectedIndex(i);
-					
-					// 탭 새로 생성시 outgoing에 무슨 값이 들어있나...
-					//outgoing.setText("");
 					break;
 				}
 			}	
@@ -354,20 +354,6 @@ public class chatClient extends JFrame {
 				ta.append("<system> 서버와의 연결이 해제되었습니다." + "\n");
 				return;
 			}
-
-			/*
-			for( int i = 0; i < tabPane.getTabCount(); i++)
-			{				
-				if(tabPane.getTitleAt(i).equals(tabName) )
-				{
-					sp = (JScrollPane)tabPane.getComponentAt(i);
-					// 스크롤팬의 sp의 컴포넌트를 가져와 ta에 넣음.
-					ta = (JTextArea)sp.getViewport().getView();
-					ta.append("<system> 서버와의 연결이 해제되었습니다." + "\n");
-					break;
-				}
-			}
-			*/
 			
 		} catch(Exception e1) { // writer, reader, sock 중 어느것이 죽을때 걸림.
 			e1.printStackTrace();
@@ -473,35 +459,6 @@ public class chatClient extends JFrame {
 		System.out.println("최종 앞의 명령어: " + command);
 		System.out.println("최종 내용물: " + content);
 
-		/*
-		if(command.equals("/join"))
-		{
-			
-			if(content == null )
-			{
-				if( tabSearcher(tabName) )
-				{
-					ta = tabDispenser(tabName);
-					ta.append("<system> 대화방명은 #으로 시작하고 공백이 아니여야합니다.(1)" + "\n");
-					return;
-				}
-				
-				/*
-				for( int i = 0; i < tabPane.getTabCount(); i++)
-				{				
-					if(tabPane.getTitleAt(i).equals(tabName))
-					{
-						System.out.println("대화방명이 #이 아니거나 공백임.");
-						sp = (JScrollPane)tabPane.getComponentAt(i);
-						// 스크롤팬의 sp의 컴포넌트를 가져와 ta에 넣음.
-						ta = (JTextArea)sp.getViewport().getView();
-						ta.append("<system> 대화방명은 #으로 시작하고 공백이 아니여야합니다.(1)" + "\n");
-						return;
-					}
-				}
-				
-			}
-			*/
 		if(command.equals("/help"))
 		{
 			if( tabSearcher(tabName) )
@@ -583,22 +540,7 @@ public class chatClient extends JFrame {
 				ta.append("<system> 잘못된 입력입니다." + "\n");
 				return;
 			}
-			
-			/*
-			for( int i = 0; i < tabPane.getTabCount(); i++)
-			{				
-				if(tabPane.getTitleAt(i).equals(tabName) )
-				{
-					System.out.println("예상외의 동작");
-					sp = (JScrollPane)tabPane.getComponentAt(i);
-					// 스크롤팬의 sp의 컴포넌트를 가져와 ta에 넣음.
-					ta = (JTextArea)sp.getViewport().getView();
-					ta.append("<system> 잘못된 입력입니다." + "\n");
-					break;
-				}
-			}
-			*/
-			
+						
 		}
 
 	}
@@ -650,7 +592,6 @@ public class chatClient extends JFrame {
 					{
 						System.out.println("받은귓속말");
 						sp = (JScrollPane)tabPane.getComponentAt(i);
-						// 스크롤팬의 sp의 컴포넌트를 가져와 ta에 넣음.
 						ta = (JTextArea)sp.getViewport().getView();
 						ta.append(receivedTabName + ": " + receivedMessage + "\n");
 
@@ -668,7 +609,6 @@ public class chatClient extends JFrame {
 					{
 						System.out.println(receivedTabName + " 대화방채팅");
 						sp = (JScrollPane)tabPane.getComponentAt(i);
-						// 스크롤팬의 sp의 컴포넌트를 가져와 ta에 넣음.
 						ta = (JTextArea)sp.getViewport().getView();
 						ta.append(receivedNick + ": " + receivedMessage + "\n");
 
@@ -707,11 +647,6 @@ public class chatClient extends JFrame {
 	private void refreshNick(String s) {
 		System.out.println("해당 대화방의 닉네임 리스트로 변경중");
 		nickList.clear(); // ArrayList 초기화
-
-		// newNickList의 value의 ArrayList중에서 대화방명인 String s을 가지는
-		// ArrayList인 value의 key(닉네임)를 가져와서 ArrayList에 넣고 repaint로 lista에 새로고침.
-		// 그러고보면 매개변수가 없는 refreshNick()에 repaint는 필요없을듯하다.
-		// 처음 접속시 system이니까 거기에 이 함수가 걸리도록 하면 될거 같다.
 
 		Collection<String> collForKey = newNickList.keySet();
 		Iterator<String> itForKey = collForKey.iterator();
@@ -764,7 +699,7 @@ public class chatClient extends JFrame {
 					newNickList.put(keyForNick, arrayForValue);
 					keyForNick = null;
 					// arrayForValue.clear()하니 newNickList에 들어가는 오브젝트도 숭당 날라간다.
-					// 매번 ArrayList를 새로 생성하니 된다.
+					// 매번 ArrayList를 새로 생성하니 된다.(해결)
 //					arrayForValue.clear();
 				}
 				if(message.startsWith("/key/"))
@@ -881,8 +816,6 @@ public class chatClient extends JFrame {
 				}
 			}	
 		}
-		
-		
 		else if(command.equals("/nick"))
 		{
 			if(content == null || content.length() == 0)
@@ -929,10 +862,8 @@ public class chatClient extends JFrame {
 			{
 				System.out.println("해당 탭 보냄");
 				sp = (JScrollPane)tabPane.getComponentAt(i);
-				// 스크롤팬의 sp의 컴포넌트를 가져와 ta에 넣음.
 				ta = (JTextArea)sp.getViewport().getView();
 				return ta; // 해당 텍스트영역을 리턴.
-//				break;
 			}
 		}
 		return null; // 생각해봐도 걸릴 이유가 없는 리턴.		
@@ -1009,7 +940,6 @@ public class chatClient extends JFrame {
 			if(cmd.equals("끝내기")) {
 				System.exit(0);
 			}
-
 
 			if(cmd.equals("대화창 청소")) {							// 생각나서 넣어본 기능.
 				sp = (JScrollPane)tabPane.getComponentAt(tabPane.getSelectedIndex());
@@ -1150,7 +1080,8 @@ public class chatClient extends JFrame {
 			if (keyCode == 10 && outgoing.getText().length() != 0) {
 				sendingManager();
 				
-				if(!(outgoing.getText()).startsWith("/")) {		// chatBuffered에 '명령어가 아닌' 이전까지의 메시지를 집어넣는 부분.
+				// chatBuffered에 '명령어가 아닌' 이전까지의 메시지를 집어넣는 부분.
+				if(!(outgoing.getText()).startsWith("/")) {		
 					chatBuffered[4] = chatBuffered[3];
 					chatBuffered[3] = chatBuffered[2];
 					chatBuffered[2] = chatBuffered[1];
@@ -1162,6 +1093,7 @@ public class chatClient extends JFrame {
 				outgoing.requestFocus();
 			}
 			
+			// ↑를 눌렀을 경우 이전까지 보냈던 메시지를 5개까지 자동완성.
 			if (keyCode == 38) {
 				if((outgoing.getText()).equals(chatBuffered[0]))
 						outgoing.setText(chatBuffered[1]);
@@ -1175,8 +1107,11 @@ public class chatClient extends JFrame {
 					outgoing.setText(chatBuffered[0]);
 				else
 					outgoing.setText(chatBuffered[0]);
-			}	// ↑를 눌렀을 경우 이전까지 보냈던 메시지를 5개까지 자동완성.
+			}
 			
+			// ↓를 눌렀을 경우 ↑의 역순으로 자동완성.
+			//  단, ↑키를 한 번이라도 눌러 '이전 메시지'를 불러와야만 작동함.
+			//  일부러 else를 제거했기 때문.
 			if (keyCode == 40) {
 				if((outgoing.getText()).equals(chatBuffered[0]))
 					outgoing.setText(chatBuffered[4]);
@@ -1188,22 +1123,23 @@ public class chatClient extends JFrame {
 					outgoing.setText(chatBuffered[2]);
 				else if((outgoing.getText()).equals(chatBuffered[4]))
 					outgoing.setText(chatBuffered[3]);
-			}	// ↓를 눌렀을 경우 ↑의 역순으로 자동완성. 단, ↑키를 한 번이라도 눌러 '이전 메시지'를 불러와야만 작동함. 일부러 else를 제거했기 때문.
+			}	
 			
+			// 닉네임 앞부분을 입력 후 Tab을 누르면,
+			// 해당되는 닉네임 중 가장 마지막에 접속한 사람의 닉네임으로 자동완성.
 			if (keyCode == 9) {
 				nickBuffered = outgoing.getText();
 				if(nickBuffered.isEmpty() == false)
 				{
 					for(int i=0; i<nickList.size(); i++)
 					{
-//						if((nickList.get(i)).contains(nickBuffered))
 						if( (nickList.get(i) ).startsWith( (nickBuffered) ) )
 						{
 							outgoing.setText(nickList.get(i));
 						}
 					}					
 				}
-			}	// 닉네임 앞부분을 입력 후 Tab을 누르면, 해당되는 닉네임 중 가장 마지막에 접속한 사람의 닉네임으로 자동완성.
+			}	
 		}
 	}
 	
@@ -1220,11 +1156,6 @@ public class chatClient extends JFrame {
             {
             	System.exit(0);
             }
-            // 프레임 숨기기
-            //frame.setVisible(false);
-    
-            // 프레임 완전히 제거
-            //frame.dispose();
         }
 	}
 
@@ -1275,6 +1206,19 @@ public class chatClient extends JFrame {
 						setJoin();
 						continue;
 					}
+					if(message.equals("/alreadyJoined/"))
+					{
+						String chatRoom = reader.readLine();
+						
+						for( int i = 0; i < tabPane.getTabCount(); i++)
+						{				
+							if(tabPane.getTitleAt(i).equals(chatRoom) )
+							{
+								tabPane.setSelectedIndex(i);
+								break;
+							}
+						}	
+					}
 					if(message.equals("/say"))
 					{
 						System.out.println("메시지 받음");
@@ -1286,6 +1230,15 @@ public class chatClient extends JFrame {
 						System.out.println("귓속말 받음");
 						receivingManager();
 						continue;
+					}
+					if(message.equals("/noNick/"))
+					{
+						if( tabSearcher(tabName) )
+						{
+							ta = tabDispenser(tabName);
+							ta.append("<system> 존재하지 않는 닉네임입니다." + "\n");
+							continue;
+						}
 					}
 					if(message.equals("/exited/"))
 					{
