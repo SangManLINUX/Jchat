@@ -8,6 +8,7 @@ import javax.swing.*;
 import javax.swing.filechooser.*;
 import javax.swing.event.ChangeListener;
 import javax.swing.event.ChangeEvent;
+import javax.swing.text.*;
 import javax.sound.sampled.*;
 
 import java.awt.*;
@@ -22,6 +23,7 @@ public class chatClient extends JFrame {
 	JPanel mainPanel; // 채팅창 패널
 	JScrollPane qScroller; // 스크롤팬
 	JTabbedPane tabPane; // 채팅창 탭팬
+	
 	
 	String help = "도움:             /help" + "\n"
 				+ "닉네임 변경:      /nick <닉네임>" + "\n"
@@ -50,6 +52,7 @@ public class chatClient extends JFrame {
 
 	JTextArea newIncoming;
 	JTextField outgoing;
+	DefaultCaret caret; // 텍스트 Area 속성 설정용
 
 	JLabel[] loginLabel;
 	JTextField[] loginTextField;
@@ -266,9 +269,14 @@ public class chatClient extends JFrame {
 			newIncoming.setLineWrap(true);
 			newIncoming.setWrapStyleWord(true);
 			newIncoming.setEditable(false);
+			caret = (DefaultCaret)newIncoming.getCaret();
+			caret.setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
 			qScroller = new JScrollPane(newIncoming);
+			// 마우스 스크롤 이벤트 테스트...
+			qScroller.addMouseListener(new scrollHandler());
 			qScroller.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
 			qScroller.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+			
 
 			// 탭팬을 새로 만든다.
 			tabPane.addTab(chatRoom, qScroller);
@@ -883,6 +891,28 @@ public class chatClient extends JFrame {
 		return false;
 	}
 
+	public class scrollHandler extends MouseAdapter {
+		DefaultCaret shcr;
+		JScrollPane shsp;
+		JTextArea shta;
+		
+		public void mousePressed(MouseEvent e)
+		{
+			JScrollPane shsp = (JScrollPane)e.getSource();
+			shta = (JTextArea)shsp.getViewport().getView();
+			
+			shcr = (DefaultCaret)shta.getCaret();
+			
+			System.out.println(shta.getLineCount());
+
+			shcr.setUpdatePolicy(DefaultCaret.NEVER_UPDATE);
+//			caret = (DefaultCaret)newIncoming.getCaret();
+//			caret.setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
+			
+			
+		}
+	}
+	
 	public class tabChangeListener implements ChangeListener {
 	      public void stateChanged(ChangeEvent c) {
 	    	  if(clientOnOff == true)
